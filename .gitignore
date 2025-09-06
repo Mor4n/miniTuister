@@ -31,3 +31,4 @@ dist/
 build/
 # Archivos temporales
 .DS_Store
+tweet-service/.env
