@@ -1,3 +1,25 @@
+const express = require('express');
+const supabase = require('./index');
+const app = express();
+app.use(express.json());
+
+// Quitar like de un tweet
+app.delete('/tweets/:tweet_id/like', async (req, res) => {
+  const { tweet_id } = req.params;
+  const { user_id } = req.body;
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id es requerido' });
+  }
+  const { error } = await supabase
+    .from('tweet_likes')
+    .delete()
+    .eq('tweet_id', tweet_id)
+    .eq('user_id', user_id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+
 // Responder a un tweet
 app.post('/tweets/:tweet_id/reply', async (req, res) => {
   const { user_id, content } = req.body;
@@ -36,29 +58,59 @@ app.delete('/tweets/:tweet_id', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   res.json({ deleted: data.length });
 });
-const express = require('express');
-const supabase = require('./index');
-const app = express();
-app.use(express.json());
 
 // Obtener todos los tweets
 app.get('/tweets', async (req, res) => {
   const { data, error } = await supabase
     .from('tweets')
-    .select('id, content, created_at, user_id');
+    .select('id, content, created_at, user_id, reply_to');
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
 
 // Crear un tweet
 app.post('/tweets', async (req, res) => {
+  console.log('POST /tweets', req.body); // Log para depuración
   const { user_id, content } = req.body;
   if (!user_id || !content) {
     return res.status(400).json({ error: 'user_id y content son requeridos' });
   }
+  if (content.length > 280) {
+    return res.status(400).json({ error: 'El contenido debe ser menor a 280 caracteres' });
+  }
   const { data, error } = await supabase
     .from('tweets')
     .insert([{ user_id, content }])
+    .select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data[0]);
+});
+
+app.put('/tweets/:tweet_id', async (req, res) => {
+  const { content } = req.body;
+  const { tweet_id } = req.params;
+  if (!content || content.length > 280) {
+    return res.status(400).json({ error: 'El contenido es requerido y debe ser menor a 280 caracteres' });
+  }
+  const { data, error } = await supabase
+    .from('tweets')
+    .update({ content })
+    .eq('id', tweet_id)
+    .select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
+});
+
+app.post('/tweets/:tweet_id/retweet', async (req, res) => {
+  const { user_id } = req.body;
+  const { tweet_id } = req.params;
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id es requerido' });
+  }
+  // Crea un nuevo tweet con retweet_to apuntando al tweet original
+  const { data, error } = await supabase
+    .from('tweets')
+    .insert([{ user_id, content: '', retweet_to: tweet_id }])
     .select();
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data[0]);

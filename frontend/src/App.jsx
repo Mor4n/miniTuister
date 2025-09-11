@@ -1,12 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TweetForm from "./components/TweetForm";
 import TweetList from "./components/TweetList";
 
 function App() {
   const [tweets, setTweets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const addTweet = (tweet) => {
-    setTweets([tweet, ...tweets]);
+  // Log temporal para depuración de reply_to
+  useEffect(() => {
+    tweets.forEach(t => console.log('tweet id:', t.id, 'reply_to:', t.reply_to));
+  }, [tweets]);
+
+  // Función para cargar tweets desde el backend
+  const fetchTweets = () => {
+    setLoading(true);
+    fetch("http://localhost:3000/tweets")
+      .then((res) => res.json())
+      .then((data) => {
+        setTweets(data.reverse());
+        setLoading(false);
+      });
+  };
+
+  // Cargar tweets al iniciar
+  useEffect(() => {
+    fetchTweets();
+  }, []);
+
+  // Crear tweet usando el microservicio
+  const addTweet = async (tweet) => {
+    const user_id = "6f28949f-5ba7-4258-9706-d5aa7f083804";
+    await fetch("http://localhost:3000/tweets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id, content: tweet.text }),
+    });
+    fetchTweets();
   };
 
   return (
@@ -44,7 +73,11 @@ function App() {
         </div>
         {/* Timeline */}
         <div className="p-4">
-          <TweetList tweets={tweets} />
+          {loading ? (
+            <div className="text-gray-400">Cargando tweets...</div>
+          ) : (
+            <TweetList tweets={tweets.filter(tweet => tweet.reply_to === null || tweet.reply_to === undefined)} />
+          )}
         </div>
       </main>
 
@@ -58,21 +91,6 @@ function App() {
             className="bg-transparent text-white placeholder-gray-500 outline-none flex-1 w-full"
           />
         </div>
-
-        {/* Trending 
-        <div className="bg-gray-900 rounded-2xl p-4">
-          <h3 className="text-xl font-bold mb-4">Tendencias</h3>
-          <div className="space-y-3">
-            {["React", "Microservicios", "JavaScript", "TailwindCSS"].map((trend, index) => (
-              <div key={index} className="hover:bg-gray-800 p-2 rounded cursor-pointer">
-                <p className="text-gray-500 text-sm">Tendencia en Tecnología</p>
-                <p className="font-bold">#{trend}</p>
-                <p className="text-gray-500 text-sm">{Math.floor(Math.random() * 50) + 10}K Tweets</p>
-              </div>
-            ))}
-          </div>
-        </div>
-*/}
       </aside>
     </div>
   );
