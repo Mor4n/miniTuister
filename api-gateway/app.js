@@ -1,11 +1,24 @@
+
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
 
-
 const app = express();
 app.use(cors());
 
+// Proxy para auth-service
+app.use('/auth', createProxyMiddleware({
+  target: 'http://localhost:3002',
+  changeOrigin: true,
+  pathRewrite: { '^/auth': '/' },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> auth-service`);
+  },
+  onError: (err, req, res) => {
+    console.error('[API-GATEWAY] Proxy error:', err);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
+  }
+}));
 
 // Logging middleware para ver todas las peticiones entrantes
 app.use((req, res, next) => {

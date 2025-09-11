@@ -3,10 +3,11 @@
     "@supabase/supabase-js": "^2.57.2",
     "@tailwindcss/vite": "^4.1.13",
     "concurrently": "^9.2.1",
+    "jwt-decode": "^4.0.0",
     "nodemon": "^3.1.10",
     "tailwindcss": "^4.1.13"
   },
   "scripts": {
-    "start:all": "concurrently \"npm start --prefix api-gateway\" \"npm start --prefix tweet-service\" "
+    "start:all": "concurrently \"npm start --prefix api-gateway\" \"npm start --prefix tweet-service\" \"npm start --prefix auth-service\" \"npm start --prefix feed-service\" "
   }
 }
