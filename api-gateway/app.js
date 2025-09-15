@@ -32,17 +32,8 @@ app.use('/users', createProxyMiddleware({
   target: 'http://localhost:3001',
   changeOrigin: true,
   pathRewrite: { '^/users': '/users' },
-  onProxyReq: (proxyReq, req, res) => {
-    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> tweet-service`);
-  },
-  onError: (err, req, res) => {
-    console.error('[API-GATEWAY] Proxy error:', err);
-    res.status(500).json({ error: 'Proxy error', details: err.message });
-  }
 }));
 
-// Si necesitas endpoints propios del gateway, aquí sí puedes usar express.json()
-// app.use(express.json());
 // Aquí puedes agregar más microservicios (auth, feed, etc)
 
 const PORT = process.env.PORT || 3000;
