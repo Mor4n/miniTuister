@@ -6,27 +6,36 @@ function App() {
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Cargar tweets al iniciar
+  // Log temporal para depuración de reply_to
   useEffect(() => {
+    tweets.forEach(t => console.log('tweet id:', t.id, 'reply_to:', t.reply_to));
+  }, [tweets]);
+
+  // Función para cargar tweets desde el backend
+  const fetchTweets = () => {
+    setLoading(true);
     fetch("http://localhost:3000/tweets")
       .then((res) => res.json())
       .then((data) => {
-        setTweets(data.reverse()); // Para mostrar los más recientes arriba
+        setTweets(data.reverse());
         setLoading(false);
       });
+  };
+
+  // Cargar tweets al iniciar
+  useEffect(() => {
+    fetchTweets();
   }, []);
 
   // Crear tweet usando el microservicio
   const addTweet = async (tweet) => {
-    // Simulación de user_id (luego usar el real)
-    const user_id = "demo-user-id";
-    const res = await fetch("http://localhost:3000/tweets", {
+    const user_id = "6f28949f-5ba7-4258-9706-d5aa7f083804";
+    await fetch("http://localhost:3000/tweets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id, content: tweet.text }),
     });
-    const data = await res.json();
-    setTweets([data, ...tweets]);
+    fetchTweets();
   };
 
   return (
@@ -67,7 +76,7 @@ function App() {
           {loading ? (
             <div className="text-gray-400">Cargando tweets...</div>
           ) : (
-            <TweetList tweets={tweets} />
+            <TweetList tweets={tweets.filter(tweet => tweet.reply_to === null || tweet.reply_to === undefined)} />
           )}
         </div>
       </main>

@@ -1,0 +1,18 @@
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import userRoutes from "./routes/user.routes.js";
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// rutas
+app.use("/users", userRoutes);
+
+const PORT = process.env.PORT || 4002;
+app.listen(PORT, () => {
+  console.log(`User service running on port ${PORT}`);
+});

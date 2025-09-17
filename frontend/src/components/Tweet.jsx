@@ -6,6 +6,14 @@ function Tweet({ tweet }) {
   const [replyText, setReplyText] = useState("");
   const [replies, setReplies] = useState([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
+
+  // Cargar cantidad de respuestas al montar
+  React.useEffect(() => {
+    fetch(`http://localhost:3000/tweets/${tweet.id}/replies`)
+      .then(res => res.json())
+      .then(data => setReplies(data));
+    // eslint-disable-next-line
+  }, [tweet.id]);
   const [deleted, setDeleted] = useState(false);
   const [likes, setLikes] = useState(0);
   const [liking, setLiking] = useState(false);
@@ -21,11 +29,12 @@ function Tweet({ tweet }) {
     setLiked(data2.liked || false);
   };
 
+
   // Dar like
   const handleLike = async () => {
     if (liked) return;
     setLiking(true);
-  await fetch(`http://localhost:3000/tweets/${tweet.id}/like`, {
+    await fetch(`http://localhost:3000/tweets/${tweet.id}/like`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id })
@@ -34,8 +43,21 @@ function Tweet({ tweet }) {
     fetchLikes();
   };
 
+  // Quitar like
+  const handleUnlike = async () => {
+    if (!liked) return;
+    setLiking(true);
+    await fetch(`http://localhost:3000/tweets/${tweet.id}/like`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id })
+    });
+    setLiking(false);
+    fetchLikes();
+  };
+
   // Simulación de user_id (en producción, usar el real)
-  const user_id = "demo-user-id";
+  const user_id = "6f28949f-5ba7-4258-9706-d5aa7f083804";
 
   // Obtener respuestas
   const fetchReplies = async () => {
@@ -98,26 +120,48 @@ function Tweet({ tweet }) {
         </div>
         {/* Botones de acción */}
         <div className="flex gap-8 mt-3 text-gray-500">
-          <button className="flex items-center gap-1 hover:text-blue-500 transition" onClick={handleShowReplies}>
+          <button className="flex items-center gap-1 hover:text-blue-500 transition relative" onClick={handleShowReplies}>
             {/* Icono de respuesta */}
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25H7.5A2.25 2.25 0 0 1 5.25 12V6.75A2.25 2.25 0 0 1 7.5 4.5h9A2.25 2.25 0 0 1 18.75 6.75V12a2.25 2.25 0 0 1-2.25 2.25H15M9 14.25l-3 3m0 0l3 3m-3-3h12" />
             </svg>
             <span className="text-sm">Responder</span>
+            <span className={
+              `ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ` +
+              (replies.length > 0 ? 'bg-blue-100 text-blue-600 border border-blue-200' : 'bg-gray-200 text-gray-400 border border-gray-300')
+            }>
+              {replies.length}
+            </span>
           </button>
-          <button
-            className={`flex items-center gap-1 transition ${liked ? 'text-pink-500' : 'hover:text-pink-500'}`}
-            onClick={handleLike}
-            disabled={liking || liked}
-            title={liked ? 'Ya le diste like' : 'Me gusta'}
-          >
-            {/* Icono de corazón */}
-            <svg xmlns="http://www.w3.org/2000/svg" fill={liked ? 'currentColor' : 'none'} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.239-4.5-5-4.5-1.657 0-3.156.832-4 2.09C10.156 4.582 8.657 3.75 7 3.75c-2.761 0-5 2.015-5 4.5 0 7.25 10 12 10 12s10-4.75 10-12z" />
-            </svg>
-            <span className="text-sm">Me gusta</span>
-            <span className="ml-1 text-xs">{likes}</span>
-          </button>
+          {liked ? (
+            <button
+              className="flex items-center gap-1 transition text-pink-500 hover:text-gray-400"
+              onClick={handleUnlike}
+              disabled={liking}
+              title="Me gusta"
+            >
+              {/* Icono de corazón lleno */}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.239-4.5-5-4.5-1.657 0-3.156.832-4 2.09C10.156 4.582 8.657 3.75 7 3.75c-2.761 0-5 2.015-5 4.5 0 7.25 10 12 10 12s10-4.75 10-12z" />
+              </svg>
+              <span className="text-sm">Me gusta</span>
+              <span className="ml-1 text-xs">{likes}</span>
+            </button>
+          ) : (
+            <button
+              className="flex items-center gap-1 transition hover:text-pink-500"
+              onClick={handleLike}
+              disabled={liking}
+              title="Me gusta"
+            >
+              {/* Icono de corazón vacío */}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.239-4.5-5-4.5-1.657 0-3.156.832-4 2.09C10.156 4.582 8.657 3.75 7 3.75c-2.761 0-5 2.015-5 4.5 0 7.25 10 12 10 12s10-4.75 10-12z" />
+              </svg>
+              <span className="text-sm">Me gusta</span>
+              <span className="ml-1 text-xs">{likes}</span>
+            </button>
+          )}
         </div>
 
         {/* Respuestas */}
