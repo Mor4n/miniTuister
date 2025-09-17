@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 
-function Tweet({ tweet }) {
+function Tweet({ tweet, user_id, navigate }) {
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replies, setReplies] = useState([]);
@@ -20,13 +20,18 @@ function Tweet({ tweet }) {
   const [liked, setLiked] = useState(false);
   // Obtener likes y si el usuario ya dio like
   const fetchLikes = async () => {
-  const res = await fetch(`http://localhost:3000/tweets/${tweet.id}/likes`);
+    const res = await fetch(`http://localhost:3000/tweets/${tweet.id}/likes`);
     const data = await res.json();
     setLikes(data.likes || 0);
     // Consultar si el usuario ya dio like
-  const res2 = await fetch(`http://localhost:3000/tweets/${tweet.id}/likes?user_id=${user_id}`);
-    const data2 = await res2.json();
-    setLiked(data2.liked || false);
+    const safeUserId = typeof user_id === 'string' ? user_id : (user_id && user_id.user_id ? user_id.user_id : '');
+    if (safeUserId) {
+      const res2 = await fetch(`http://localhost:3000/tweets/${tweet.id}/likes?user_id=${safeUserId}`);
+      const data2 = await res2.json();
+      setLiked(data2.liked || false);
+    } else {
+      setLiked(false);
+    }
   };
 
 
@@ -56,8 +61,8 @@ function Tweet({ tweet }) {
     fetchLikes();
   };
 
-  // Simulación de user_id (en producción, usar el real)
-  const user_id = "6f28949f-5ba7-4258-9706-d5aa7f083804";
+  // Obtener user_id y username del tweet
+  const username = tweet.username || "Usuario";
 
   // Obtener respuestas
   const fetchReplies = async () => {
@@ -72,10 +77,21 @@ function Tweet({ tweet }) {
   const handleReply = async (e) => {
     e.preventDefault();
     if (!replyText.trim()) return;
-  await fetch(`http://localhost:3000/tweets/${tweet.id}/reply`, {
+    // Obtener username del localStorage/JWT si existe
+    let username = null;
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const jwt_decode_mod = await import('jwt-decode');
+        const decode = jwt_decode_mod.default ? jwt_decode_mod.default : jwt_decode_mod;
+        const decoded = decode(token);
+        username = decoded.username || decoded.user || decoded.name;
+      }
+    } catch {}
+    await fetch(`http://localhost:3000/tweets/${tweet.id}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id, content: replyText })
+      body: JSON.stringify({ user_id, username, content: replyText })
     });
     setReplyText("");
     fetchReplies();
@@ -106,14 +122,47 @@ function Tweet({ tweet }) {
       <img
         src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"
         alt="avatar"
-        className="w-12 h-12 rounded-full object-cover border border-gray-300"
+        className="w-12 h-12 rounded-full object-cover border border-gray-300 cursor-pointer"
+        onClick={() => {
+          let uuid = tweet.user_id;
+          if (typeof uuid === 'object' && uuid !== null) {
+            uuid = uuid.user_id || uuid.id || '';
+          }
+          if (uuid && typeof uuid === 'string' && uuid.length > 0) {
+            navigate(`/profile/${uuid}`);
+          } else {
+            console.error('user_id inválido para navegación de perfil:', tweet);
+          }
+        }}
       />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-gray-800">Usuario</span>
-          <span className="text-gray-500 text-sm">@usuario</span>
+          <span className="font-bold text-gray-800 cursor-pointer" onClick={() => {
+            let uuid = tweet.user_id;
+            if (typeof uuid === 'object' && uuid !== null) {
+              uuid = uuid.user_id || uuid.id || '';
+            }
+            if (uuid && typeof uuid === 'string' && uuid.length > 0) {
+              navigate(`/profile/${uuid}`);
+            } else {
+              console.error('user_id inválido para navegación de perfil:', tweet);
+            }
+          }}>{username}</span>
+          <span className="text-gray-500 text-sm cursor-pointer" onClick={() => {
+            let uuid = tweet.user_id;
+            if (typeof uuid === 'object' && uuid !== null) {
+              uuid = uuid.user_id || uuid.id || '';
+            }
+            if (uuid && typeof uuid === 'string' && uuid.length > 0) {
+              navigate(`/profile/${uuid}`);
+            } else {
+              console.error('user_id inválido para navegación de perfil:', tweet);
+            }
+          }}>@{username}</span>
           <span className="text-gray-400 text-xs ml-auto">{tweet.date || tweet.created_at}</span>
-          <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">Borrar</button>
+          {String(tweet.user_id) === String(user_id) && (
+            <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">Borrar</button>
+          )}
         </div>
         <div className="mt-2 text-gray-900 text-base whitespace-pre-line break-words">
           {tweet.text || tweet.content}
@@ -185,7 +234,7 @@ function Tweet({ tweet }) {
                   <div key={r.id} className="flex gap-2 items-start">
                     <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="avatar" className="w-7 h-7 rounded-full border border-gray-300" />
                     <div>
-                      <div className="text-xs text-gray-800 font-bold">Usuario</div>
+                      <div className="text-xs text-gray-800 font-bold">{r.username || "Usuario"}</div>
                       <div className="text-xs text-gray-600">{r.content}</div>
                       <div className="text-xs text-gray-400">{r.created_at}</div>
                     </div>
