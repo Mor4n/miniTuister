@@ -1,39 +1,35 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { createClient } from "@supabase/supabase-js";
-import { generateToken, verifyToken } from "../utils/jwt.js";
+import { generateToken } from "../utils/jwt.js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-export const login = async (req, res) => {
-  const { email, password } = req.body;
+export const register = async (req, res) => {
+  const { username, password } = req.body;
 
   try {
+    // Verifica si el usuario ya existe
+    const { data: existing } = await supabase
+      .from("users")
+      .select("id")
+      .eq("username", username)
+      .maybeSingle();
+    if (existing) throw new Error("El usuario ya existe");
+
+    const hashed = await bcrypt.hash(password, 10);
     const { data, error } = await supabase
       .from("users")
-      .select("*")
-      .eq("email", email)
-      .single();
+      .insert([{ username, password: hashed }])
+      .select();
+    if (error) throw new Error(error.message);
 
-    if (error || !data) throw new Error("Usuario no encontrado");
+    // Crear perfil en la tabla profiles
+    await supabase
+      .from("profiles")
+      .insert([{ id: data[0].id, username: data[0].username }]);
 
-    const valid = await bcrypt.compare(password, data.password);
-    if (!valid) throw new Error("Contraseña incorrecta");
-
-    // ✅ Usamos la utilidad
-    const token = generateToken({ id: data.id, email: data.email });
-
-    res.json({ token });
+    res.status(201).json({ id: data[0].id, username: data[0].username });
   } catch (err) {
-    res.status(401).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
-};
-
-export const verify = (req, res) => {
-  const token = req.headers["authorization"]?.split(" ")[1];
-  if (!token) return res.status(403).json({ error: "Token requerido" });
-
-  const decoded = verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: "Token inválido" });
-
-  res.json({ valid: true, user: decoded });
 };
