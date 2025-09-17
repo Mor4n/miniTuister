@@ -64,6 +64,36 @@ app.post('/tweets', async (req, res) => {
   res.status(201).json(data[0]);
 });
 
+app.put('/tweets/:tweet_id', async (req, res) => {
+  const { content } = req.body;
+  const { tweet_id } = req.params;
+  if (!content || content.length > 280) {
+    return res.status(400).json({ error: 'El contenido es requerido y debe ser menor a 280 caracteres' });
+  }
+  const { data, error } = await supabase
+    .from('tweets')
+    .update({ content })
+    .eq('id', tweet_id)
+    .select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
+});
+
+app.post('/tweets/:tweet_id/retweet', async (req, res) => {
+  const { user_id } = req.body;
+  const { tweet_id } = req.params;
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id es requerido' });
+  }
+  // Crea un nuevo tweet con retweet_to apuntando al tweet original
+  const { data, error } = await supabase
+    .from('tweets')
+    .insert([{ user_id, content: '', retweet_to: tweet_id }])
+    .select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data[0]);
+});
+
 // Obtener tweets de un usuario
 app.get('/users/:user_id/tweets', async (req, res) => {
   const { user_id } = req.params;

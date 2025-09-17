@@ -1,12 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TweetForm from "./components/TweetForm";
 import TweetList from "./components/TweetList";
 
 function App() {
   const [tweets, setTweets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const addTweet = (tweet) => {
-    setTweets([tweet, ...tweets]);
+  // Cargar tweets al iniciar
+  useEffect(() => {
+    fetch("http://localhost:3000/tweets")
+      .then((res) => res.json())
+      .then((data) => {
+        setTweets(data.reverse()); // Para mostrar los más recientes arriba
+        setLoading(false);
+      });
+  }, []);
+
+  // Crear tweet usando el microservicio
+  const addTweet = async (tweet) => {
+    // Simulación de user_id (luego usar el real)
+    const user_id = "demo-user-id";
+    const res = await fetch("http://localhost:3000/tweets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id, content: tweet.text }),
+    });
+    const data = await res.json();
+    setTweets([data, ...tweets]);
   };
 
   return (
@@ -44,7 +64,11 @@ function App() {
         </div>
         {/* Timeline */}
         <div className="p-4">
-          <TweetList tweets={tweets} />
+          {loading ? (
+            <div className="text-gray-400">Cargando tweets...</div>
+          ) : (
+            <TweetList tweets={tweets} />
+          )}
         </div>
       </main>
 
@@ -58,21 +82,6 @@ function App() {
             className="bg-transparent text-white placeholder-gray-500 outline-none flex-1 w-full"
           />
         </div>
-
-        {/* Trending 
-        <div className="bg-gray-900 rounded-2xl p-4">
-          <h3 className="text-xl font-bold mb-4">Tendencias</h3>
-          <div className="space-y-3">
-            {["React", "Microservicios", "JavaScript", "TailwindCSS"].map((trend, index) => (
-              <div key={index} className="hover:bg-gray-800 p-2 rounded cursor-pointer">
-                <p className="text-gray-500 text-sm">Tendencia en Tecnología</p>
-                <p className="font-bold">#{trend}</p>
-                <p className="text-gray-500 text-sm">{Math.floor(Math.random() * 50) + 10}K Tweets</p>
-              </div>
-            ))}
-          </div>
-        </div>
-*/}
       </aside>
     </div>
   );
