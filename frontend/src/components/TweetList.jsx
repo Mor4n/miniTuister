@@ -2,11 +2,18 @@
 import React, { useEffect, useState } from "react";
 import Tweet from "./Tweet";
 
-function TweetList({ user_id, navigate }) {
-  const [tweets, setTweets] = useState([]);
+
+function TweetList({ user_id, navigate, tweets: propTweets }) {
+  const [tweets, setTweets] = useState(propTweets || []);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Si se pasan tweets por prop, no hacer fetch
+    if (Array.isArray(propTweets)) {
+      setTweets(propTweets);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     fetch(`http://localhost:3000/tweets?user_id=${user_id}`)
       .then(async res => {
@@ -32,7 +39,7 @@ function TweetList({ user_id, navigate }) {
         setLoading(false);
         console.error('Error al cargar tweets: No se pudo conectar con el servidor.');
       });
-  }, [user_id]);
+  }, [user_id, propTweets]);
 
   if (loading) {
     return <div className="text-gray-400">Cargando tweets...</div>;
@@ -41,7 +48,7 @@ function TweetList({ user_id, navigate }) {
   return (
     <div className="flex flex-col gap-3">
       {tweets.map((tweet, idx) => (
-        <Tweet key={idx} tweet={tweet} user_id={user_id} navigate={navigate} />
+        <Tweet key={tweet.id || idx} tweet={tweet} user_id={user_id} navigate={navigate} />
       ))}
     </div>
   );

@@ -18,4 +18,9 @@ public class UserSearchController {
     public List<Map<String, Object>> searchUsers(@RequestParam String query) {
         return searchService.searchUsers(query);
     }
+
+    @GetMapping("/tweets")
+    public List<Map<String, Object>> searchTweets(@RequestParam String query) {
+        return searchService.searchTweets(query);
+    }
 }

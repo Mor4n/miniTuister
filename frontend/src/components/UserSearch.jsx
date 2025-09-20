@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 
-function UserSearch({ onSelect }) {
+function UserSearch({ onSelect, onSearchTweets }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -54,13 +54,13 @@ const handleSelect = (user) => {
       <input
         type="text"
         className="w-full p-3 rounded bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-        placeholder="Buscar usuario..."
+        placeholder="Buscar usuario o tweet..."
         value={query}
         onChange={handleChange}
         onFocus={() => query.length > 1 && setShowList(true)}
         onBlur={() => setTimeout(() => setShowList(false), 150)}
       />
-      {showList && results.length > 0 && (
+      {showList && (results.length > 0 || query.length > 1) && (
         <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10">
           {results.map((user, idx) => (
             <div
@@ -79,6 +79,16 @@ const handleSelect = (user) => {
               </div>
             </div>
           ))}
+          {/* Opción para buscar tweets */}
+          <div
+            className="flex items-center gap-3 p-2 hover:bg-blue-100 cursor-pointer border-t border-gray-200"
+            onMouseDown={() => {
+              setShowList(false);
+              onSearchTweets && onSearchTweets(query);
+            }}
+          >
+            <span className="font-bold text-blue-500">Buscar "{query}" en tweets</span>
+          </div>
         </div>
       )}
       {loading && <div className="absolute right-3 top-3 text-blue-400 text-xs">Buscando...</div>}

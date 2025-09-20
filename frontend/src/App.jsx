@@ -8,15 +8,26 @@ import Profile from "./components/Profile";
 import Sidebar from "./components/Sidebar";
 import UserSearch from "./components/UserSearch";
 import { jwtDecode } from "jwt-decode";
-
+import TweetSearchFeed from "./components/TweetSearchFeed";
 
 function App() {
+  // Tweet search hooks
+  const [tweetSearchResults, setTweetSearchResults] = useState([]);
+  const [tweetSearchLoading, setTweetSearchLoading] = useState(false);
+  const [tweetSearchQuery, setTweetSearchQuery] = useState("");
+
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [route, setRoute] = useState(window.location.pathname);
   const [profileUserId, setProfileUserId] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [user, setUser] = useState(null);
+
+  // Buscar tweets por palabra clave y redirigir
+  const handleSearchTweets = (query) => {
+    navigate(`/search/tweets?query=${encodeURIComponent(query)}`);
+  };
+
   // Decodificar usuario al iniciar o cuando cambia el token
   useEffect(() => {
     console.log('TOKEN in useEffect:', token);
@@ -88,7 +99,7 @@ function App() {
     fetch("http://localhost:3000/tweets")
       .then((res) => res.json())
       .then((data) => {
-  setTweets(data);
+        setTweets(data);
         setLoading(false);
       });
   };
@@ -138,11 +149,33 @@ function App() {
     return <Profile user={{ user_id: safeProfileUserId, username: profileUser }} currentUser={user} tweets={tweets.filter(t => String(t.user_id) === safeProfileUserId)} onLogout={handleLogout} navigate={navigate} />;
   }
 
+  // Página de resultados de búsqueda de tweets
+  if (route.startsWith('/search/tweets')) {
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('query') || '';
+    return (
+      <div className="min-h-screen bg-black text-white flex">
+        <Sidebar onLogout={handleLogout} active={"search"} navigate={navigate} />
+        <main className="flex-1 ml-64 max-w-2xl border-x border-gray-800 min-h-screen">
+          <TweetSearchFeed query={query} />
+        </main>
+        <aside className="w-80 p-4 space-y-4 hidden lg:block">
+          <div className="sticky top-4">
+            <UserSearch
+              onSelect={user_id => navigate(`/profile/${user_id}`)}
+              onSearchTweets={handleSearchTweets}
+            />
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
   // Resto de la app (usuario autenticado)
   return (
     <div className="min-h-screen bg-black text-white flex">
       {/* Sidebar */}
-  <Sidebar onLogout={handleLogout} active={route === '/profile' ? 'profile' : 'home'} navigate={navigate} />
+      <Sidebar onLogout={handleLogout} active={route === '/profile' ? 'profile' : 'home'} navigate={navigate} />
 
       {/* Main Content */}
       <main className="flex-1 ml-64 max-w-2xl border-x border-gray-800 min-h-screen">
@@ -168,7 +201,10 @@ function App() {
       <aside className="w-80 p-4 space-y-4 hidden lg:block">
         {/* Search - esquina superior derecha tipo Twitter */}
         <div className="sticky top-4">
-    <UserSearch onSelect={user_id => navigate(`/profile/${user_id}`)} />
+          <UserSearch
+            onSelect={user_id => navigate(`/profile/${user_id}`)}
+            onSearchTweets={handleSearchTweets}
+          />
         </div>
         {/* ...otros widgets del sidebar derecho... */}
       </aside>

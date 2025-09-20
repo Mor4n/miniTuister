@@ -25,9 +25,10 @@ public class SupabaseClient {
         }
     public List<Map<String, Object>> searchTable(String table, String column, String query) {
     // Usuarios cuyo username CONTENGA el texto buscado
+    // Buscar tweets que contengan el substring (insensible a mayúsculas/minúsculas)
     String url = supabaseUrl + "/rest/v1/" + table
     + "?select=*"
-    + "&" + column + "=ilike." + query + "%";
+    + "&" + column + "=ilike.*" + query + "*";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("apikey", supabaseKey);

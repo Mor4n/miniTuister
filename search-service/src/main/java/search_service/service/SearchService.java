@@ -45,13 +45,15 @@ public class SearchService {
         return new ArrayList<>(userMap.values());
     }
 
-    public List<TweetResult> searchTweets(String query) {
-        List<TweetResult> tweets = new ArrayList<>();
-        // Buscar en tabla tweets por contenido
-        List<Map<String, Object>> tweetResults = supabaseClient.searchTable("tweets", "content", query);
-        for (Map<String, Object> t : tweetResults) {
-            tweets.add(new TweetResult((String)t.get("content"), (String)t.get("username")));
+    public List<Map<String, Object>> searchTweets(String query) {
+        System.out.println("[DEBUG] Query de búsqueda de tweets: '" + query + "'");
+        if (query == null || query.trim().isEmpty()) {
+            System.out.println("[DEBUG] Query vacío, devolviendo lista vacía");
+            return new ArrayList<>();
         }
-        return tweets;
+        List<Map<String, Object>> tweetResults = supabaseClient.searchTable("tweets", "content", query);
+        System.out.println("[DEBUG] Resultados de búsqueda de tweets: " + tweetResults);
+        // Puedes enriquecer con username y fecha si lo tienes en la tabla
+        return tweetResults;
     }
 }
