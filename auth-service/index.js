@@ -1,3 +1,4 @@
+
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -15,7 +16,11 @@ const supabase = createClient(
 );
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
-
+// Manejo global de errores
+app.use((err, req, res, next) => {
+  console.error('[AUTH-SERVICE] Error:', err);
+  res.status(500).json({ error: 'Error interno del microservicio de autenticación' });
+});
 // Registro de usuario
 app.post('/register', async (req, res) => {
   const { username, password, email } = req.body;

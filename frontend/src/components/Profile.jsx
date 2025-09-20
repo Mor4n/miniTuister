@@ -72,20 +72,28 @@ function Profile({ user, tweets, onLogout, navigate, currentUser }) {
     if (tab === 'likes') {
       setLoadingLikes(true);
       fetch(`http://localhost:3000/users/${user.user_id}/liked-tweets`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
+        .then(async res => {
+          let data;
+          try {
+            data = await res.json();
+          } catch (jsonErr) {
+            setLikedTweets([]);
+            setLoadingLikes(false);
+            console.error('Error al cargar likes: No se pudo procesar la respuesta del servidor.');
+            return;
+          }
+          if (res.ok && Array.isArray(data)) {
             setLikedTweets(data);
           } else {
             setLikedTweets([]);
-            console.error('Error al cargar likes:', data);
+            console.error('Error al cargar likes:', data.error || data);
           }
           setLoadingLikes(false);
         })
         .catch(err => {
           setLikedTweets([]);
           setLoadingLikes(false);
-          console.error('Error al cargar likes:', err);
+          console.error('Error al cargar likes: No se pudo conectar con el servidor.');
         });
     }
   }, [tab, user.user_id]);

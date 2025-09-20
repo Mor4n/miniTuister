@@ -12,17 +12,27 @@ function Register({ onRegister }) {
     e.preventDefault();
     setError("");
     setSuccess(false);
-    const res = await fetch("http://localhost:3000/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, email }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setSuccess(true);
-      onRegister && onRegister();
-    } else {
-      setError(data.error || "Error al registrarse");
+    try {
+      const res = await fetch("http://localhost:3000/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, email }),
+      });
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        setError("No se pudo procesar la respuesta del servidor.");
+        return;
+      }
+      if (res.ok) {
+        setSuccess(true);
+        onRegister && onRegister();
+      } else {
+        setError(data.error || "Error al registrarse");
+      }
+    } catch (err) {
+      setError("No se pudo conectar con el servidor. Intenta más tarde.");
     }
   };
 

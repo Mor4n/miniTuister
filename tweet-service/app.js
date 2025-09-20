@@ -1,9 +1,14 @@
+
 const express = require('express');
 const supabase = require('./index');
 const app = express();
 app.use(express.json());
 
-
+// Manejo global de errores
+app.use((err, req, res, next) => {
+  console.error('[TWEET-SERVICE] Error:', err);
+  res.status(500).json({ error: 'Error interno del microservicio de tweets' });
+});
 // SEGUIR A UN USUARIO
 app.post('/users/:user_id/follow', async (req, res) => {
   const { user_id } = req.params; // a quién quiero seguir

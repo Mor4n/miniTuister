@@ -8,16 +8,26 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    const res = await fetch("http://localhost:3000/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      onLogin(data.token);
-    } else {
-      setError(data.error || "Error al iniciar sesión");
+    try {
+      const res = await fetch("http://localhost:3000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        setError("No se pudo procesar la respuesta del servidor.");
+        return;
+      }
+      if (res.ok) {
+        onLogin(data.token);
+      } else {
+        setError(data.error || "Error al iniciar sesión");
+      }
+    } catch (err) {
+      setError("No se pudo conectar con el servidor. Intenta más tarde.");
     }
   };
 

@@ -1,8 +1,14 @@
+
 const express = require('express');
 const supabase = require('./index');
 const app = express();
 app.use(express.json());
 
+// Manejo global de errores
+app.use((err, req, res, next) => {
+  console.error('[FEED-SERVICE] Error:', err);
+  res.status(500).json({ error: 'Error interno del microservicio de feed' });
+});
 // Obtener el feed personalizado para un usuario
 app.get('/feed/:user_id', async (req, res) => {
   const { user_id } = req.params;

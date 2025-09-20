@@ -1,4 +1,5 @@
 
+
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
@@ -6,7 +7,11 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
-
+// Manejo global de errores
+app.use((err, req, res, next) => {
+  console.error('[API-GATEWAY] Error:', err);
+  res.status(500).json({ error: 'Error interno del API Gateway' });
+});
 // Proxy para auth-service
 app.use('/auth', createProxyMiddleware({
   target: 'http://localhost:3002',
