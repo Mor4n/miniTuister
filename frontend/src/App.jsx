@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+
 import TweetForm from "./components/TweetForm";
 import TweetList from "./components/TweetList";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
 import Sidebar from "./components/Sidebar";
+import UserSearch from "./components/UserSearch";
 import { jwtDecode } from "jwt-decode";
 
 
@@ -164,15 +166,11 @@ function App() {
 
       {/* Right Sidebar */}
       <aside className="w-80 p-4 space-y-4 hidden lg:block">
-        {/* Search */}
-        {/** 
-        <div className="bg-gray-900 rounded-full p-3 mb-4">
-          <input
-            type="text"
-            placeholder="Buscar en miniTuister"
-            className="bg-transparent text-white placeholder-gray-500 outline-none flex-1 w-full"
-          />
-        </div>*/}
+        {/* Search - esquina superior derecha tipo Twitter */}
+        <div className="sticky top-4">
+    <UserSearch onSelect={user_id => navigate(`/profile/${user_id}`)} />
+        </div>
+        {/* ...otros widgets del sidebar derecho... */}
       </aside>
     </div>
   );

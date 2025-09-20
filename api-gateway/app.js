@@ -65,6 +65,20 @@ app.use('/users', createProxyMiddleware({
 
 // Aquí puedes agregar más microservicios (auth, feed, etc)
 
+// Proxy para search-service
+app.use('/search', createProxyMiddleware({
+  target: 'http://localhost:3004', // Puerto personalizado para search-service
+  changeOrigin: true,
+  pathRewrite: { '^/search': '/search' },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> search-service`);
+  },
+  onError: (err, req, res) => {
+    console.error('[API-GATEWAY] Proxy error:', err);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
+  }
+}));
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`API Gateway corriendo en puerto ${PORT}`);
