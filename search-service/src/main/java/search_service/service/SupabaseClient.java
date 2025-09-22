@@ -53,4 +53,49 @@ public class SupabaseClient {
             return new ArrayList<>();
         }
     }
+    
+    public List<Map<String, Object>> searchTweetsWithUsernames(String query) {
+        // Buscar tweets con JOIN a profiles para obtener username
+        String url = supabaseUrl + "/rest/v1/tweets"
+        + "?select=id,content,created_at,user_id,profiles:profiles!user_id(username)"
+        + "&content=ilike.*" + query + "*"
+        + "&order=created_at.desc"
+        + "&limit=50";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("apikey", supabaseKey);
+        headers.set("Authorization", "Bearer " + supabaseKey);
+        headers.set("Accept", "application/json");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        
+        try {
+            @SuppressWarnings("unchecked")
+            ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, entity, List.class);
+            List<?> rawList = response.getBody();
+            List<Map<String, Object>> result = new ArrayList<>();
+            
+            if (rawList != null) {
+                for (Object obj : rawList) {
+                    if (obj instanceof Map) {
+                        Map<String, Object> tweet = (Map<String, Object>) obj;
+                        // Aplanar la estructura de profiles
+                        Object profiles = tweet.get("profiles");
+                        if (profiles instanceof Map) {
+                            Map<String, Object> profileMap = (Map<String, Object>) profiles;
+                            tweet.put("username", profileMap.get("username"));
+                        } else {
+                            tweet.put("username", "Usuario");
+                        }
+                        tweet.remove("profiles"); // Eliminar el objeto profiles anidado
+                        result.add(tweet);
+                    }
+                }
+            }
+            
+            return result;
+        } catch (Exception e) {
+            System.err.println("[ERROR] Supabase tweets search failed: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
 }

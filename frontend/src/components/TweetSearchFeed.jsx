@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import TweetList from "./TweetList";
 
-export default function TweetSearchFeed({ query }) {
+export default function TweetSearchFeed({ query, navigate, user_id }) {
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +29,7 @@ export default function TweetSearchFeed({ query }) {
         {loading ? (
           <div className="text-gray-400">Buscando tweets...</div>
         ) : tweets.length > 0 ? (
-          <TweetList tweets={tweets} />
+          <TweetList tweets={tweets} user_id={user_id} navigate={navigate} />
         ) : (
           <div className="text-gray-400">No se encontraron tweets.</div>
         )}

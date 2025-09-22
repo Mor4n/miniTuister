@@ -51,9 +51,10 @@ public class SearchService {
             System.out.println("[DEBUG] Query vacío, devolviendo lista vacía");
             return new ArrayList<>();
         }
-        List<Map<String, Object>> tweetResults = supabaseClient.searchTable("tweets", "content", query);
+        
+        // Usar el SupabaseClient para buscar tweets con JOIN de profiles
+        List<Map<String, Object>> tweetResults = supabaseClient.searchTweetsWithUsernames(query);
         System.out.println("[DEBUG] Resultados de búsqueda de tweets: " + tweetResults);
-        // Puedes enriquecer con username y fecha si lo tienes en la tabla
         return tweetResults;
     }
 }

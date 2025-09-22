@@ -15,8 +15,10 @@ Este proyecto es un clon didáctico de Twitter usando arquitectura de microservi
 - `/api-gateway`      → API Gateway (puerta de entrada a todos los microservicios)
 - `/auth-service`     → (Ejemplo) Microservicio para autenticación (puedes agregar más)
 
+
 ## ¿Cómo correr el proyecto?
 
+### Opción 1: Manual (sin Docker)
 1. Instala dependencias en la raíz y en cada microservicio:
 	```sh
 	npm install
@@ -33,6 +35,37 @@ Este proyecto es un clon didáctico de Twitter usando arquitectura de microservi
 	cd frontend
 	npm install
 	npm run dev
+	```
+
+### Opción 2: Usando Docker Compose (recomendado)
+1. Abre una terminal en la raíz del proyecto:
+	```powershell
+	cd "c:\Users\Moon\Documents\miniTuister antes de merge"
+	```
+2. Para construir y levantar todos los servicios (incluyendo frontend):
+	```powershell
+	docker-compose up --build
+	```
+	Esto construirá las imágenes y levantará todos los servicios definidos en `docker-compose.yml`.
+
+	- El frontend estará disponible en: http://localhost:5173
+	- API Gateway: http://localhost:3000
+	- Otros microservicios: puertos 3002, 3003, 3004, 3005, 3006
+
+3. Para detener todo el stack:
+	```powershell
+	docker-compose down
+	```
+
+#### Comandos útiles
+- Ver logs de un servicio específico:
+	```powershell
+	docker-compose logs nombre-del-servicio
+	```
+- Reconstruir solo un servicio:
+	```powershell
+	docker-compose build nombre-del-servicio
+	docker-compose up nombre-del-servicio
 	```
 
 ## ¿Cómo agregar un nuevo microservicio?

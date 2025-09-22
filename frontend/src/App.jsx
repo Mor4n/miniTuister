@@ -22,6 +22,77 @@ function App() {
   const [profileUserId, setProfileUserId] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [user, setUser] = useState(null);
+  const [profileUserData, setProfileUserData] = useState(null);
+
+  const [tab, setTab] = useState("para-ti"); // "para-ti" o "seguidos"
+
+  // Función para obtener datos de un usuario específico desde todos los tweets
+  const getUserDataFromTweets = (userId) => {
+    console.log('Buscando usuario con ID:', userId);
+    console.log('Tweets disponibles:', tweets.length);
+    console.log('Primeros 3 tweets:', tweets.slice(0, 3));
+    
+    // Primero buscar en los tweets cargados
+    const userFromTweets = tweets.find(t => String(t.user_id) === String(userId));
+    console.log('Usuario encontrado en tweets:', userFromTweets);
+    
+    if (userFromTweets && userFromTweets.username) {
+      console.log('Retornando usuario con username:', userFromTweets.username);
+      return {
+        user_id: userId,
+        username: userFromTweets.username
+      };
+    }
+    
+    // Si no se encuentra, usar valores por defecto pero intentar cargar todos los tweets
+    console.log('Usuario no encontrado, usando valores por defecto');
+    return {
+      user_id: userId,
+      username: 'usuario'
+    };
+  };
+
+  // Cargar tweets para "Para ti"
+  const fetchParaTiTweets = () => {
+    setLoading(true);
+    fetch("http://localhost:3000/tweets")
+      .then((res) => res.json())
+      .then((data) => {
+        setTweets(data);
+        setLoading(false);
+      });
+  };
+
+  // Cargar tweets para "Seguidos"
+  const fetchSeguidosTweets = () => {
+    setLoading(true);
+    fetch(`http://localhost:3000/feed/${user.user_id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTweets(data);
+        } else {
+          setTweets([]); // Si no hay tweets, muestra el mensaje
+        }
+        setLoading(false);
+      });
+  };
+
+  // Manejar cambio de tab
+  useEffect(() => {
+    if (tab === "para-ti") {
+      fetchParaTiTweets();
+    } else if (tab === "seguidos") {
+      fetchSeguidosTweets();
+    }
+  }, [tab]);
+
+  // Resetear a "Para ti" cuando se navega a home
+  useEffect(() => {
+    if (route === '/') {
+      setTab("para-ti");
+    }
+  }, [route]);
 
   // Buscar tweets por palabra clave y redirigir
   const handleSearchTweets = (query) => {
@@ -74,6 +145,7 @@ function App() {
       setProfileUserId(String(match[1]));
     } else {
       setProfileUserId(null);
+      setProfileUserData(null);
     }
   };
 
@@ -100,6 +172,20 @@ function App() {
       .then((res) => res.json())
       .then((data) => {
         setTweets(data);
+        setLoading(false);
+      });
+  };
+
+  // Función para cargar TODOS los tweets disponibles (para obtener usernames)
+  const fetchAllTweets = () => {
+    setLoading(true);
+    fetch("http://localhost:3000/tweets")
+      .then((res) => res.json())
+      .then((data) => {
+        setTweets(data);
+        setLoading(false);
+      })
+      .catch(() => {
         setLoading(false);
       });
   };
@@ -139,14 +225,53 @@ function App() {
   // Perfil de otro usuario
   if (route.startsWith('/profile/')) {
     const safeProfileUserId = typeof profileUserId === 'string' ? profileUserId : (profileUserId && profileUserId.user_id ? profileUserId.user_id : '');
-    if (loading) {
-      return <div className="p-8 text-gray-400">Cargando perfil...</div>;
-    }
+    
     if (!safeProfileUserId) {
       return <div className="p-8 text-red-400">Perfil de usuario no válido.</div>;
     }
-    const profileUser = tweets.find(t => String(t.user_id) === safeProfileUserId)?.username || 'usuario';
-    return <Profile user={{ user_id: safeProfileUserId, username: profileUser }} currentUser={user} tweets={tweets.filter(t => String(t.user_id) === safeProfileUserId)} onLogout={handleLogout} navigate={navigate} />;
+    
+    // Priorizar datos del usuario si los tenemos de la búsqueda
+    let profileUser;
+    if (profileUserData && String(profileUserData.user_id) === String(safeProfileUserId)) {
+      console.log('Usando datos de búsqueda:', profileUserData);
+      profileUser = {
+        user_id: safeProfileUserId,
+        username: profileUserData.username
+      };
+    } else {
+      console.log('Usando datos de tweets');
+      profileUser = getUserDataFromTweets(safeProfileUserId);
+      
+      // Si no encontramos el usuario en tweets y no estamos cargando, cargar tweets
+      if (profileUser.username === 'usuario' && !loading) {
+        fetchAllTweets();
+      }
+    }
+    
+    // Solo mostrar loading en layout completo si realmente estamos cargando y no tenemos datos
+    if (loading && !profileUserData && profileUser.username === 'usuario') {
+      return (
+        <div className="min-h-screen bg-black text-white flex">
+          <Sidebar onLogout={handleLogout} active="profile" navigate={navigate} />
+          <main className="flex-1 ml-64 max-w-2xl border-x border-gray-800 min-h-screen">
+            <div className="p-8 text-gray-400">Cargando perfil...</div>
+          </main>
+          <aside className="w-80 p-4 space-y-4 hidden lg:block">
+            <div className="sticky top-4">
+              <UserSearch
+                onSelect={user => {
+                  setProfileUserData(user);
+                  navigate(`/profile/${user.user_id}`);
+                }}
+                onSearchTweets={handleSearchTweets}
+              />
+            </div>
+          </aside>
+        </div>
+      );
+    }
+    
+    return <Profile user={profileUser} currentUser={user} tweets={tweets.filter(t => String(t.user_id) === safeProfileUserId)} onLogout={handleLogout} navigate={navigate} />;
   }
 
   // Página de resultados de búsqueda de tweets
@@ -157,12 +282,16 @@ function App() {
       <div className="min-h-screen bg-black text-white flex">
         <Sidebar onLogout={handleLogout} active={"search"} navigate={navigate} />
         <main className="flex-1 ml-64 max-w-2xl border-x border-gray-800 min-h-screen">
-          <TweetSearchFeed query={query} />
+          <TweetSearchFeed query={query} navigate={navigate} user_id={user?.user_id} />
         </main>
         <aside className="w-80 p-4 space-y-4 hidden lg:block">
           <div className="sticky top-4">
             <UserSearch
-              onSelect={user_id => navigate(`/profile/${user_id}`)}
+              onSelect={user => {
+                // Guardar los datos del usuario y navegar
+                setProfileUserData(user);
+                navigate(`/profile/${user.user_id}`);
+              }}
               onSearchTweets={handleSearchTweets}
             />
           </div>
@@ -179,9 +308,30 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 ml-64 max-w-2xl border-x border-gray-800 min-h-screen">
-        {/* Header */}
+        {/* Header con tabs */}
         <div className="sticky top-0 bg-black bg-opacity-80 backdrop-blur border-b border-gray-800 p-4 z-10">
-          <h2 className="text-xl font-bold">Inicio</h2>
+          <div className="flex gap-8 justify-center">
+            <button
+              className={`pb-2 font-bold ${
+                tab === "para-ti"
+                  ? "border-b-4 border-blue-400 text-blue-400"
+                  : "text-gray-400"
+              }`}
+              onClick={() => setTab("para-ti")}
+            >
+              Para ti
+            </button>
+            <button
+              className={`pb-2 font-bold ${
+                tab === "seguidos"
+                  ? "border-b-4 border-blue-400 text-blue-400"
+                  : "text-gray-400"
+              }`}
+              onClick={() => setTab("seguidos")}
+            >
+              Seguidos
+            </button>
+          </div>
         </div>
         {/* Tweet Composer */}
         <div className="border-b border-gray-800 p-4">
@@ -191,8 +341,14 @@ function App() {
         <div className="p-4">
           {loading ? (
             <div className="text-gray-400">Cargando tweets...</div>
-          ) : (
+          ) : tweets.length > 0 ? (
             <TweetList tweets={tweets.filter(tweet => tweet.reply_to === null || tweet.reply_to === undefined)} user_id={user?.user_id} navigate={navigate} />
+          ) : (
+            <div className="text-gray-400 text-center mt-8">
+              {tab === "seguidos"
+                ? "Aún no tienes seguidos :("
+                : "No se encontraron tweets."}
+            </div>
           )}
         </div>
       </main>
@@ -202,7 +358,11 @@ function App() {
         {/* Search - esquina superior derecha tipo Twitter */}
         <div className="sticky top-4">
           <UserSearch
-            onSelect={user_id => navigate(`/profile/${user_id}`)}
+            onSelect={user => {
+              // Guardar los datos del usuario y navegar
+              setProfileUserData(user);
+              navigate(`/profile/${user.user_id}`);
+            }}
             onSearchTweets={handleSearchTweets}
           />
         </div>

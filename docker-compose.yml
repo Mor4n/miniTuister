@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - tweet-service
+      - feed-service
+      - user-service
+      - search-service
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+
+  tweet-service:
+    build:
+      context: ./tweet-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+
+  feed-service:
+    build:
+      context: ./feed-service
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+
+
+  search-service:
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default

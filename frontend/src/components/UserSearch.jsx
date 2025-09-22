@@ -46,52 +46,73 @@ const handleSelect = (user) => {
   setQuery("");
   setResults([]);
   setShowList(false);
-  onSelect && onSelect(user.user_id);
+  // Pasar el objeto completo del usuario en lugar de solo el user_id
+  onSelect && onSelect(user);
 };
 
   return (
     <div className="relative w-full">
-      <input
-        type="text"
-        className="w-full p-3 rounded bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-        placeholder="Buscar usuario o tweet..."
-        value={query}
-        onChange={handleChange}
-        onFocus={() => query.length > 1 && setShowList(true)}
-        onBlur={() => setTimeout(() => setShowList(false), 150)}
-      />
+      <div className="relative">
+        {/* Icono de búsqueda */}
+        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
+          </svg>
+        </div>
+        <input
+          type="text"
+          className="w-full py-3 pl-12 pr-4 rounded-full bg-gray-900 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-500 transition-all duration-200"
+          placeholder="Buscar usuario o tweet..."
+          value={query}
+          onChange={handleChange}
+          onFocus={() => query.length > 1 && setShowList(true)}
+          onBlur={() => setTimeout(() => setShowList(false), 150)}
+        />
+        {loading && (
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+          </div>
+        )}
+      </div>
       {showList && (results.length > 0 || query.length > 1) && (
-        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10">
+        <div className="absolute left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-10 overflow-hidden">
           {results.map((user, idx) => (
             <div
               key={user.id || user.username || idx}
-              className="flex items-center gap-3 p-2 hover:bg-blue-50 cursor-pointer"
+              className="flex items-center gap-3 p-3 hover:bg-gray-800 cursor-pointer transition-colors duration-150"
               onMouseDown={() => handleSelect(user)}
             >
               <img
                 src={user.avatar || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
                 alt="avatar"
-                className="w-8 h-8 rounded-full border border-gray-300"
+                className="w-10 h-10 rounded-full border border-gray-600"
               />
               <div>
-                <div className="font-bold text-gray-800">{user.username}</div>
-                <div className="text-gray-500 text-sm">@{user.username}</div>
+                <div className="font-bold text-white">{user.username}</div>
+                <div className="text-gray-400 text-sm">@{user.username}</div>
               </div>
             </div>
           ))}
           {/* Opción para buscar tweets */}
           <div
-            className="flex items-center gap-3 p-2 hover:bg-blue-100 cursor-pointer border-t border-gray-200"
+            className="flex items-center gap-3 p-3 hover:bg-gray-800 cursor-pointer border-t border-gray-700 transition-colors duration-150"
             onMouseDown={() => {
               setShowList(false);
               onSearchTweets && onSearchTweets(query);
             }}
           >
-            <span className="font-bold text-blue-500">Buscar "{query}" en tweets</span>
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-blue-400">Buscar "{query}" en tweets</div>
+              <div className="text-gray-500 text-sm">Ver todos los tweets relacionados</div>
+            </div>
           </div>
         </div>
       )}
-      {loading && <div className="absolute right-3 top-3 text-blue-400 text-xs">Buscando...</div>}
     </div>
   );
 }

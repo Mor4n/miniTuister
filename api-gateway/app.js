@@ -65,6 +65,20 @@ app.use('/users', createProxyMiddleware({
 
 // Aquí puedes agregar más microservicios (auth, feed, etc)
 
+// Proxy para feed-service
+app.use('/feed', createProxyMiddleware({
+  target: 'http://localhost:3005', // Puerto del feed-service
+  changeOrigin: true,
+  pathRewrite: { '^/feed': '/feed' },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> feed-service`);
+  },
+  onError: (err, req, res) => {
+    console.error('[API-GATEWAY] Proxy error:', err);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
+  }
+}));
+
 // Proxy para search-service
 app.use('/search', createProxyMiddleware({
   target: 'http://localhost:3004', // Puerto personalizado para search-service

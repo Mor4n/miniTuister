@@ -9,7 +9,7 @@ app.use((err, req, res, next) => {
   console.error('[FEED-SERVICE] Error:', err);
   res.status(500).json({ error: 'Error interno del microservicio de feed' });
 });
-// Obtener el feed personalizado para un usuario
+// Obtener el feed personalizado para un usuario (solo seguidos)
 app.get('/feed/:user_id', async (req, res) => {
   const { user_id } = req.params;
   if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
@@ -21,12 +21,13 @@ app.get('/feed/:user_id', async (req, res) => {
     .eq('follower_id', user_id);
   if (followingError) return res.status(500).json({ error: followingError.message });
 
-  // 2. Construir lista de IDs: yo + seguidos
-  const followingIds = following ? following.map(f => f.following_id) : [];
-  followingIds.push(user_id); // incluir mis propios tuits
+  if (!following || following.length === 0) {
+    return res.json([]); // Si no sigue a nadie, devolver lista vacía
+  }
 
-  // 3. Obtener tuits de yo + seguidos
-  let { data: feedTweets, error: feedError } = await supabase
+  // 2. Obtener tweets de los usuarios seguidos
+  const followingIds = following.map(f => f.following_id);
+  const { data: feedTweets, error: feedError } = await supabase
     .from('tweets')
     .select('id, content, created_at, user_id, profiles:profiles!user_id(username)')
     .in('user_id', followingIds)
@@ -34,22 +35,15 @@ app.get('/feed/:user_id', async (req, res) => {
     .limit(30);
   if (feedError) return res.status(500).json({ error: feedError.message });
 
-  // 4. Obtener algunos tuits aleatorios de otros usuarios (que no sigo)
-  const { data: randomTweets, error: randomError } = await supabase
-    .from('tweets')
-    .select('id, content, created_at, user_id, profiles:profiles!user_id(username)')
-    .not('user_id', 'in', `(${followingIds.map(id => `'${id}'`).join(',')})`)
-    .order('created_at', { ascending: false })
-    .limit(5);
-  if (randomError) return res.status(500).json({ error: randomError.message });
+  // Transformar la respuesta para aplanar la estructura de profiles
+  const transformedTweets = feedTweets.map(tweet => ({
+    ...tweet,
+    username: tweet.profiles?.username || 'Usuario',
+    profiles: undefined // Eliminar el objeto profiles anidado
+  }));
 
-  // 5. Mezclar y devolver el feed
-  const allTweets = [...feedTweets, ...randomTweets];
-  // Opcional: mezclar aleatoriamente
-  allTweets.sort(() => Math.random() - 0.5);
-
-  res.json(allTweets);
+  res.json(transformedTweets);
 });
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3005;
 app.listen(PORT, () => console.log(`Feed service running on port ${PORT}`));
