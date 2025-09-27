@@ -38,8 +38,14 @@ services:
       context: ./feed-service
       dockerfile: Dockerfile
     ports:
-      - "3005:3005"
+      - "3006:3006"
 
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
 
   search-service:
     build:

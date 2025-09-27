@@ -50,11 +50,11 @@ app.use('/tweets', createProxyMiddleware({
 }));
 
 app.use('/users', createProxyMiddleware({
-  target: 'http://localhost:3003',
+  target: 'http://localhost:3005',
   changeOrigin: true,
   pathRewrite: { '^/users': '/users' },
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> tweet-service`);
+    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> user-service`);
   },
   onError: (err, req, res) => {
     console.error('[API-GATEWAY] Proxy error:', err);
@@ -67,7 +67,7 @@ app.use('/users', createProxyMiddleware({
 
 // Proxy para feed-service
 app.use('/feed', createProxyMiddleware({
-  target: 'http://localhost:3005', // Puerto del feed-service
+  target: 'http://localhost:3006', // Puerto del feed-service
   changeOrigin: true,
   pathRewrite: { '^/feed': '/feed' },
   onProxyReq: (proxyReq, req, res) => {

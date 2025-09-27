@@ -45,5 +45,5 @@ app.get('/feed/:user_id', async (req, res) => {
   res.json(transformedTweets);
 });
 
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3006;
 app.listen(PORT, () => console.log(`Feed service running on port ${PORT}`));
