@@ -144,13 +144,25 @@ app.get('/tweets/:tweet_id/replies', async (req, res) => {
   const { data, error } = await supabase
     .from('tweets')
     .select('id, content, created_at, user_id, profiles:profiles!user_id(username)')
-    .eq('reply_to', tweet_id);
+    .eq('reply_to', tweet_id)
+    .order('created_at', { ascending: true });
   if (error) return res.status(500).json({ error: error.message });
-  const replies = data.map(reply => ({
-    ...reply,
-    username: reply.profiles?.username || 'usuario'
+  
+  // Agregar conteo de respuestas para cada tweet
+  const repliesWithCount = await Promise.all(data.map(async (reply) => {
+    const { count } = await supabase
+      .from('tweets')
+      .select('*', { count: 'exact', head: true })
+      .eq('reply_to', reply.id);
+    
+    return {
+      ...reply,
+      username: reply.profiles?.username || 'usuario',
+      reply_count: count || 0
+    };
   }));
-  res.json(replies);
+  
+  res.json(repliesWithCount);
 });
 
 // Borrar un tweet
@@ -166,6 +178,26 @@ app.delete('/tweets/:tweet_id', async (req, res) => {
 });
 
 // Obtener todos los tweets
+// Obtener un tweet específico por ID
+app.get('/tweets/:tweet_id', async (req, res) => {
+  const { tweet_id } = req.params;
+  
+  const { data, error } = await supabase
+    .from('tweets')
+    .select('id, content, created_at, reply_to, user_id, profiles:profiles!user_id(username)')
+    .eq('id', tweet_id)
+    .single();
+    
+  if (error) return res.status(404).json({ error: 'Tweet no encontrado' });
+  
+  const tweet = {
+    ...data,
+    username: data.profiles?.username || 'usuario'
+  };
+  
+  res.json(tweet);
+});
+
 app.get('/tweets', async (req, res) => {
   const { data, error } = await supabase
     .from('tweets')

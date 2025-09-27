@@ -64,6 +64,15 @@ function Tweet({ tweet, user_id, navigate }) {
   // Obtener user_id y username del tweet
   const username = tweet.username || "Usuario";
 
+  // Manejar clic en el tweet (navegación)
+  const handleTweetClick = (e) => {
+    // Evitar navegación si se hace clic en botones o enlaces
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('[data-no-navigate]')) {
+      return;
+    }
+    navigate(`/tweet/${tweet.id}`);
+  };
+
   // Obtener respuestas
   const fetchReplies = async () => {
     setLoadingReplies(true);
@@ -118,12 +127,17 @@ function Tweet({ tweet, user_id, navigate }) {
   if (deleted) return null;
 
   return (
-    <div className="flex gap-3 bg-white p-4 rounded-xl shadow border border-gray-200">
+    <div 
+      className="flex gap-3 bg-white p-4 rounded-xl shadow border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+      onClick={handleTweetClick}
+    >
       <img
         src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"
         alt="avatar"
         className="w-12 h-12 rounded-full object-cover border border-gray-300 cursor-pointer"
-        onClick={() => {
+        data-no-navigate
+        onClick={(e) => {
+          e.stopPropagation();
           let uuid = tweet.user_id;
           if (typeof uuid === 'object' && uuid !== null) {
             uuid = uuid.user_id || uuid.id || '';
@@ -137,38 +151,61 @@ function Tweet({ tweet, user_id, navigate }) {
       />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-gray-800 cursor-pointer" onClick={() => {
-            let uuid = tweet.user_id;
-            if (typeof uuid === 'object' && uuid !== null) {
-              uuid = uuid.user_id || uuid.id || '';
-            }
-            if (uuid && typeof uuid === 'string' && uuid.length > 0) {
-              navigate(`/profile/${uuid}`);
-            } else {
-              console.error('user_id inválido para navegación de perfil:', tweet);
-            }
-          }}>{username}</span>
-          <span className="text-gray-500 text-sm cursor-pointer" onClick={() => {
-            let uuid = tweet.user_id;
-            if (typeof uuid === 'object' && uuid !== null) {
-              uuid = uuid.user_id || uuid.id || '';
-            }
-            if (uuid && typeof uuid === 'string' && uuid.length > 0) {
-              navigate(`/profile/${uuid}`);
-            } else {
-              console.error('user_id inválido para navegación de perfil:', tweet);
-            }
-          }}>@{username}</span>
+          <span 
+            className="font-bold text-gray-800 cursor-pointer hover:underline" 
+            data-no-navigate
+            onClick={(e) => {
+              e.stopPropagation();
+              let uuid = tweet.user_id;
+              if (typeof uuid === 'object' && uuid !== null) {
+                uuid = uuid.user_id || uuid.id || '';
+              }
+              if (uuid && typeof uuid === 'string' && uuid.length > 0) {
+                navigate(`/profile/${uuid}`);
+              } else {
+                console.error('user_id inválido para navegación de perfil:', tweet);
+              }
+            }}
+          >
+            {username}
+          </span>
+          <span 
+            className="text-gray-500 text-sm cursor-pointer hover:underline" 
+            data-no-navigate
+            onClick={(e) => {
+              e.stopPropagation();
+              let uuid = tweet.user_id;
+              if (typeof uuid === 'object' && uuid !== null) {
+                uuid = uuid.user_id || uuid.id || '';
+              }
+              if (uuid && typeof uuid === 'string' && uuid.length > 0) {
+                navigate(`/profile/${uuid}`);
+              } else {
+                console.error('user_id inválido para navegación de perfil:', tweet);
+              }
+            }}
+          >
+         
+            @{username}
+          </span>
           <span className="text-gray-400 text-xs ml-auto">{tweet.date || tweet.created_at}</span>
           {String(tweet.user_id) === String(user_id) && (
-            <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">Borrar</button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }} 
+              className="ml-2 text-xs text-red-500 hover:underline"
+            >
+              Borrar
+            </button>
           )}
         </div>
         <div className="mt-2 text-gray-900 text-base whitespace-pre-line break-words">
           {tweet.text || tweet.content}
         </div>
         {/* Botones de acción */}
-        <div className="flex gap-8 mt-3 text-gray-500">
+        <div className="flex gap-8 mt-3 text-gray-500" data-no-navigate>
           <button className="flex items-center gap-1 hover:text-blue-500 transition relative" onClick={handleShowReplies}>
             {/* Icono de respuesta */}
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">

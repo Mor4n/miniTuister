@@ -9,6 +9,7 @@ import Sidebar from "./components/Sidebar";
 import UserSearch from "./components/UserSearch";
 import { jwtDecode } from "jwt-decode";
 import TweetSearchFeed from "./components/TweetSearchFeed";
+import TweetDetail from "./components/TweetDetail";
 
 function App() {
   // Tweet search hooks
@@ -272,6 +273,15 @@ function App() {
     }
     
     return <Profile user={profileUser} currentUser={user} tweets={tweets.filter(t => String(t.user_id) === safeProfileUserId)} onLogout={handleLogout} navigate={navigate} />;
+  }
+
+  // Ruta para tweet individual
+  if (route.startsWith('/tweet/')) {
+    const tweetId = route.split('/tweet/')[1];
+    if (!tweetId) {
+      return <div className="p-8 text-red-400">Tweet ID no válido</div>;
+    }
+    return <TweetDetail tweetId={tweetId} user={user} navigate={navigate} onLogout={handleLogout} handleSearchTweets={handleSearchTweets} />;
   }
 
   // Página de resultados de búsqueda de tweets
