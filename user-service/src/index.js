@@ -25,6 +25,11 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // rutas
+app.use((req, res, next) => {
+  console.log(`[USER-SERVICE] ${req.method} ${req.path}`);
+  next();
+});
+
 app.use("/users", userRoutes);
 // Manejo global de errores
 app.use((err, req, res, next) => {

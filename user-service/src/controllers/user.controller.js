@@ -227,18 +227,18 @@ export const changePassword = async (req, res) => {
   }
 
   try {
-    // Verificar contraseña actual
+    // Verificar contraseña actual EN LA TABLA USERS (no profiles)
     const { data: userData, error: userError } = await supabase
-      .from('profiles')
-      .select('password_hash')
+      .from('users')
+      .select('password')
       .eq('id', id)
       .single();
 
     if (userError) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    // Verificar contraseña actual usando bcrypt
-    const bcrypt = await import('bcrypt');
-    const isCurrentPasswordValid = await bcrypt.default.compare(currentPassword, userData.password_hash);
+    // Verificar contraseña actual usando bcryptjs
+    const bcryptjs = await import('bcryptjs');
+    const isCurrentPasswordValid = await bcryptjs.default.compare(currentPassword, userData.password);
     
     if (!isCurrentPasswordValid) {
       return res.status(400).json({ error: 'Contraseña actual incorrecta' });
@@ -246,12 +246,12 @@ export const changePassword = async (req, res) => {
 
     // Hashear nueva contraseña
     const saltRounds = 10;
-    const newPasswordHash = await bcrypt.default.hash(newPassword, saltRounds);
+    const newPasswordHash = await bcryptjs.default.hash(newPassword, saltRounds);
 
-    // Actualizar contraseña
+    // Actualizar contraseña EN LA TABLA USERS
     const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ password_hash: newPasswordHash })
+      .from('users')
+      .update({ password: newPasswordHash })
       .eq('id', id);
 
     if (updateError) return res.status(500).json({ error: updateError.message });

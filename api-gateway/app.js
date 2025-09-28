@@ -50,7 +50,7 @@ app.use('/tweets', createProxyMiddleware({
 }));
 
 app.use('/users', createProxyMiddleware({
-  target: 'http://localhost:3005',
+  target: 'http://localhost:3005', // user-service puerto
   changeOrigin: true,
   pathRewrite: { '^/users': '/users' },
   onProxyReq: (proxyReq, req, res) => {

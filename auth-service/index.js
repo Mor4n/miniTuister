@@ -88,5 +88,7 @@ app.get('/verify', authMiddleware, (req, res) => {
 });
 });
 
+
+
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => console.log(`Auth service running on port ${PORT}`));
