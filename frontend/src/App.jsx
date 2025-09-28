@@ -7,6 +7,7 @@ import Register from "./components/Register";
 import Profile from "./components/Profile";
 import Sidebar from "./components/Sidebar";
 import UserSearch from "./components/UserSearch";
+import Gork from "./components/Gork";
 import { jwtDecode } from "jwt-decode";
 import TweetSearchFeed from "./components/TweetSearchFeed";
 import TweetDetail from "./components/TweetDetail";
@@ -284,6 +285,18 @@ function App() {
     return <TweetDetail tweetId={tweetId} user={user} navigate={navigate} onLogout={handleLogout} handleSearchTweets={handleSearchTweets} />;
   }
 
+  // Ruta para Gork (Chatbot)
+  if (route === '/gork') {
+    return (
+      <div className="min-h-screen bg-black text-white flex">
+        <Sidebar onLogout={handleLogout} active="gork" navigate={navigate} />
+        <main className="flex-1 ml-64">
+          <Gork />
+        </main>
+      </div>
+    );
+  }
+
   // Página de resultados de búsqueda de tweets
   if (route.startsWith('/search/tweets')) {
     const params = new URLSearchParams(window.location.search);
@@ -314,7 +327,7 @@ function App() {
   return (
     <div className="min-h-screen bg-black text-white flex">
       {/* Sidebar */}
-      <Sidebar onLogout={handleLogout} active={route === '/profile' ? 'profile' : 'home'} navigate={navigate} />
+      <Sidebar onLogout={handleLogout} active={route === '/profile' ? 'profile' : route === '/gork' ? 'gork' : 'home'} navigate={navigate} />
 
       {/* Main Content */}
       <main className="flex-1 ml-64 max-w-2xl border-x border-gray-800 min-h-screen">

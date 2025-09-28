@@ -107,6 +107,20 @@ app.use('/search', createProxyMiddleware({
   }
 }));
 
+// Proxy para gork-service (.NET)
+app.use('/api/gork', createProxyMiddleware({
+  target: 'http://localhost:3007', // Puerto del gork-service .NET
+  changeOrigin: true,
+  pathRewrite: { '^/api/gork': '/api/gork' },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> gork-service`);
+  },
+  onError: (err, req, res) => {
+    console.error('[API-GATEWAY] Proxy error:', err);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
+  }
+}));
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`API Gateway corriendo en puerto ${PORT}`);

@@ -11,6 +11,10 @@ function Sidebar({ onLogout, active, navigate }) {
           <span className="text-xl font-medium">Inicio</span>
         </div>
         
+        <div className={`flex items-center space-x-3 p-3 rounded-full cursor-pointer transition-colors ${active === 'gork' ? 'bg-gray-900 text-blue-400' : 'hover:bg-gray-900'}`} onClick={() => navigate('/gork')}>
+          <span className="text-xl font-medium">Gork</span>
+        </div>
+        
         <div className={`flex items-center space-x-3 p-3 rounded-full cursor-pointer transition-colors ${active === 'profile' ? 'bg-gray-900' : 'hover:bg-gray-900'}`} onClick={() => navigate('/profile')}>
           <span className="text-xl font-medium">Perfil</span>
         </div>
