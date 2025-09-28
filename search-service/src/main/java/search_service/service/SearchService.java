@@ -13,34 +13,43 @@ public class SearchService {
 
     public List<Map<String, Object>> searchUsers(String query) {
         Map<String, Map<String, Object>> userMap = new LinkedHashMap<>();
-        // Buscar en tabla users por username
-        List<Map<String, Object>> userResults = supabaseClient.searchTable("users", "username", query);
-        System.out.println("[DEBUG] Resultados users: " + userResults);
-        for (Map<String, Object> u : userResults) {
-            String username = (String)u.get("username");
-            String id = (String)u.get("id");
-            if (username != null && id != null && !userMap.containsKey(username)) {
-                Map<String, Object> userObj = new HashMap<>();
-                userObj.put("user_id", id);
-                userObj.put("username", username);
-                userObj.put("avatar", u.getOrDefault("avatar", null));
-                userMap.put(username, userObj);
-            }
-        }
+        
         // Buscar en tabla profiles por username
         List<Map<String, Object>> profileResults = supabaseClient.searchTable("profiles", "username", query);
-        System.out.println("[DEBUG] Resultados profiles: " + profileResults);
+        System.out.println("[DEBUG] Resultados profiles por username: " + profileResults);
         for (Map<String, Object> p : profileResults) {
             String username = (String)p.get("username");
             String id = (String)p.get("id");
-            if (username != null && id != null && !userMap.containsKey(username)) {
+            if (username != null && id != null) {
                 Map<String, Object> userObj = new HashMap<>();
+                userObj.put("id", id);
                 userObj.put("user_id", id);
                 userObj.put("username", username);
-                userObj.put("avatar", p.getOrDefault("avatar_url", null));
-                userMap.put(username, userObj);
+                userObj.put("avatar_url", p.getOrDefault("avatar_url", null));
+                userObj.put("full_name", p.getOrDefault("full_name", null));
+                userObj.put("bio", p.getOrDefault("bio", null));
+                userMap.put(id, userObj);
             }
         }
+        
+        // Buscar en tabla profiles por full_name
+        List<Map<String, Object>> profileFullNameResults = supabaseClient.searchTable("profiles", "full_name", query);
+        System.out.println("[DEBUG] Resultados profiles por full_name: " + profileFullNameResults);
+        for (Map<String, Object> p : profileFullNameResults) {
+            String username = (String)p.get("username");
+            String id = (String)p.get("id");
+            if (username != null && id != null && !userMap.containsKey(id)) {
+                Map<String, Object> userObj = new HashMap<>();
+                userObj.put("id", id);
+                userObj.put("user_id", id);
+                userObj.put("username", username);
+                userObj.put("avatar_url", p.getOrDefault("avatar_url", null));
+                userObj.put("full_name", p.getOrDefault("full_name", null));
+                userObj.put("bio", p.getOrDefault("bio", null));
+                userMap.put(id, userObj);
+            }
+        }
+        
         System.out.println("[DEBUG] Resultados finales: " + userMap.values());
         return new ArrayList<>(userMap.values());
     }

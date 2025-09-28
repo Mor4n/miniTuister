@@ -11,6 +11,35 @@ function ThreadTweet({ tweet, user_id, navigate, isCurrentTweet, isLastInThread,
   const [likes, setLikes] = useState(0);
   const [liking, setLiking] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [authorProfile, setAuthorProfile] = useState({
+    full_name: null,
+    bio: null,
+    avatar_url: null
+  });
+
+  // Función para cargar el perfil del autor del tweet
+  const fetchAuthorProfile = async () => {
+    try {
+      let authorId = tweet.user_id;
+      if (typeof authorId === 'object' && authorId !== null) {
+        authorId = authorId.user_id || authorId.id || '';
+      }
+      
+      if (authorId && typeof authorId === 'string' && authorId.length > 0) {
+        const response = await fetch(`http://localhost:3000/users/${authorId}/profile`);
+        if (response.ok) {
+          const data = await response.json();
+          setAuthorProfile({
+            full_name: data.full_name,
+            bio: data.bio,
+            avatar_url: data.avatar_url
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar perfil del autor:', error);
+    }
+  };
 
   // Cargar cantidad de respuestas al montar
   React.useEffect(() => {
@@ -128,9 +157,10 @@ function ThreadTweet({ tweet, user_id, navigate, isCurrentTweet, isLastInThread,
     }
   };
 
-  // Cargar likes al montar
+  // Cargar likes y perfil del autor al montar
   React.useEffect(() => {
     fetchLikes();
+    fetchAuthorProfile();
     // eslint-disable-next-line
   }, []);
 
@@ -158,7 +188,7 @@ function ThreadTweet({ tweet, user_id, navigate, isCurrentTweet, isLastInThread,
         )}
         
         <img
-          src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"
+          src={authorProfile.avatar_url ? `http://localhost:3005${authorProfile.avatar_url}` : "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
           alt="avatar"
           className="w-12 h-12 rounded-full object-cover border border-gray-600 cursor-pointer"
           data-no-navigate
@@ -193,7 +223,7 @@ function ThreadTweet({ tweet, user_id, navigate, isCurrentTweet, isLastInThread,
                 }
               }}
             >
-              {username}
+              {authorProfile.full_name || username}
             </span>
             <span 
               className="text-gray-400 text-sm cursor-pointer hover:underline" 

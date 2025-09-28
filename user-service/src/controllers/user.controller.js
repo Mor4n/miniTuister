@@ -157,3 +157,134 @@ export const getUserTweets = async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 };
+
+// Obtener perfil de usuario (sin autenticación requerida para visualización)
+export const getUserProfile = async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, bio, avatar_url, created_at')
+      .eq('id', id)
+      .single();
+
+    if (error) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+// Actualizar perfil de usuario
+export const updateUserProfile = async (req, res) => {
+  const { id } = req.params;
+  const { full_name, bio } = req.body;
+  
+  try {
+    // Preparar datos para actualizar
+    const updateData = {};
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (bio !== undefined) updateData.bio = bio;
+    
+    // Si hay archivo de imagen subido, agregar la URL
+    if (req.file) {
+      updateData.avatar_url = `/uploads/profile-images/${req.file.filename}`;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', id)
+      .select();
+
+    if (error) return res.status(400).json({ error: error.message });
+    
+    res.json({ 
+      message: 'Perfil actualizado correctamente',
+      profile: data[0] 
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+// Cambiar contraseña
+export const changePassword = async (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ 
+      error: 'Contraseña actual y nueva contraseña son requeridas' 
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ 
+      error: 'La nueva contraseña debe tener al menos 6 caracteres' 
+    });
+  }
+
+  try {
+    // Verificar contraseña actual
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('password_hash')
+      .eq('id', id)
+      .single();
+
+    if (userError) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    // Verificar contraseña actual usando bcrypt
+    const bcrypt = await import('bcrypt');
+    const isCurrentPasswordValid = await bcrypt.default.compare(currentPassword, userData.password_hash);
+    
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ error: 'Contraseña actual incorrecta' });
+    }
+
+    // Hashear nueva contraseña
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.default.hash(newPassword, saltRounds);
+
+    // Actualizar contraseña
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ password_hash: newPasswordHash })
+      .eq('id', id);
+
+    if (updateError) return res.status(500).json({ error: updateError.message });
+
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    console.error('Error changing password:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+// Buscar usuarios por username o full_name
+export const searchUsers = async (req, res) => {
+  const { query } = req.query;
+  
+  if (!query || query.trim().length < 2) {
+    return res.json([]);
+  }
+  
+  try {
+    const searchTerm = `%${query.trim()}%`;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, bio, avatar_url, created_at')
+      .or(`username.ilike.${searchTerm},full_name.ilike.${searchTerm}`)
+      .order('username')
+      .limit(10);
+
+    if (error) return res.status(500).json({ error: 'Error en la búsqueda' });
+    
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};

@@ -21,6 +21,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Servir archivos estáticos para imágenes de perfil
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // rutas
 app.use("/users", userRoutes);
 // Manejo global de errores

@@ -83,13 +83,18 @@ const handleSelect = (user) => {
               onMouseDown={() => handleSelect(user)}
             >
               <img
-                src={user.avatar || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
+                src={user.avatar_url ? `http://localhost:3005${user.avatar_url}` : "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
                 alt="avatar"
-                className="w-10 h-10 rounded-full border border-gray-600"
+                className="w-10 h-10 rounded-full border border-gray-600 object-cover"
               />
-              <div>
-                <div className="font-bold text-white">{user.username}</div>
+              <div className="flex-1">
+                <div className="font-bold text-white">{user.full_name || user.username}</div>
                 <div className="text-gray-400 text-sm">@{user.username}</div>
+                {user.bio && (
+                  <div className="text-gray-500 text-xs mt-1 line-clamp-1">
+                    {user.bio}
+                  </div>
+                )}
               </div>
             </div>
           ))}

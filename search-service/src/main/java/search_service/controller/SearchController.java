@@ -29,4 +29,18 @@ public class SearchController {
         result.put("tweets", tweets);
         return result;
     }
+
+    @GetMapping("/search/users")
+    public List<Map<String, Object>> searchUsers(@RequestParam String query) {
+        System.out.println("[DEBUG] Búsqueda de usuarios con query: " + query);
+        List<Map<String, Object>> users = searchService.searchUsers(query);
+        System.out.println("[DEBUG] Usuarios encontrados: " + users);
+        return users;
+    }
+
+    @GetMapping("/search/tweets")
+    public List<Map<String, Object>> searchTweets(@RequestParam String query) {
+        System.out.println("[DEBUG] Búsqueda de tweets con query: " + query);
+        return searchService.searchTweets(query);
+    }
 }

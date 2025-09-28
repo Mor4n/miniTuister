@@ -10,9 +10,14 @@ import {
   getFollowersCount,
   getFollowingCount,
   getUserLikedTweets,
-  getUserTweets
+  getUserTweets,
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
+  searchUsers
 } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
+import upload from "../middlewares/upload.js";
 
 const router = Router();
 
@@ -32,5 +37,13 @@ router.get("/:user_id/following-count", getFollowingCount);
 // Rutas de tweets de usuario (migradas desde tweet-service)
 router.get("/:user_id/liked-tweets", getUserLikedTweets);
 router.get("/:user_id/tweets", getUserTweets);
+
+// Rutas de perfil de usuario
+router.get("/:id/profile", getUserProfile); // Obtener perfil (público)
+router.put("/:id/profile", authMiddleware, upload.single('avatar'), updateUserProfile); // Actualizar perfil (con imagen)
+router.put("/:id/change-password", authMiddleware, changePassword); // Cambiar contraseña
+
+// Ruta de búsqueda de usuarios
+router.get("/search", searchUsers); // Buscar usuarios por username o full_name
 
 export default router;

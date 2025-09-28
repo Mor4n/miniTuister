@@ -3,13 +3,37 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import TweetList from "./TweetList";
+import EditProfile from "./EditProfile";
 
 function Profile({ user, tweets, onLogout, navigate, currentUser }) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followers, setFollowers] = useState(0);
   const [following, setFollowing] = useState(0);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [profileData, setProfileData] = useState(user);
+  const [fullProfile, setFullProfile] = useState({
+    full_name: null,
+    bio: null,
+    avatar_url: null
+  });
 
-  // Cargar estado de follow y contadores (contadores siempre, follow solo si no es mi perfil)
+  // Función para cargar el perfil completo del usuario
+  const fetchFullProfile = async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:3000/users/${userId}/profile`);
+      if (response.ok) {
+        const data = await response.json();
+        setFullProfile({
+          full_name: data.full_name,
+          bio: data.bio,
+          avatar_url: data.avatar_url
+        });
+      }
+    } catch (error) {
+      console.error('Error al cargar perfil completo:', error);
+    }
+  };
+
   // Cargar estado de follow y contadores (contadores siempre, follow solo si no es mi perfil)
   const fetchCounts = (uid) => {
     if (!uid) return;
@@ -21,7 +45,13 @@ function Profile({ user, tweets, onLogout, navigate, currentUser }) {
       .then(data => setFollowing(data.following || 0));
   };
   useEffect(() => {
-    if (!currentUser || !user.user_id) return;
+    if (!user.user_id) return;
+    
+    // Cargar perfil completo
+    fetchFullProfile(user.user_id);
+    
+    if (!currentUser) return;
+    
     if (user.user_id !== currentUser.user_id) {
       fetch(`http://localhost:3000/users/${user.user_id}/is-following?follower_id=${currentUser.user_id}`)
         .then(res => res.json())
@@ -107,20 +137,27 @@ function Profile({ user, tweets, onLogout, navigate, currentUser }) {
         {/* Header */}
         <div className="sticky top-0 bg-black bg-opacity-80 backdrop-blur border-b border-gray-800 p-6 z-10 flex items-center gap-6">
           <img
-            src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"
+            src={fullProfile.avatar_url ? `http://localhost:3005${fullProfile.avatar_url}` : "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
             alt="avatar"
             className="w-24 h-24 rounded-full border-4 border-blue-500 shadow-lg object-cover cursor-pointer"
             onClick={() => navigate(`/profile/${user.user_id}`)}
           />
-          <div>
-            <div className="text-3xl font-bold text-blue-400">{user.username}</div>
+          <div className="flex-1">
+            <div className="text-3xl font-bold text-blue-400">
+              {fullProfile.full_name || user.username}
+            </div>
             <div className="text-gray-400 text-lg">@{user.username}</div>
+            {fullProfile.bio && (
+              <div className="text-gray-300 mt-2 text-base leading-relaxed">
+                {fullProfile.bio}
+              </div>
+            )}
             {/* Contadores siempre visibles, botón seguir solo si no es mi perfil */}
             {currentUser && (
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-sm text-gray-300">{followers} seguidores</span>
                 <span className="text-sm text-gray-300">{following} siguiendo</span>
-                {user.user_id !== currentUser.user_id && (
+                {user.user_id !== currentUser.user_id ? (
                   isFollowing ? (
                     <button className="ml-4 px-4 py-1 rounded-full bg-gray-700 text-white border border-blue-400 hover:bg-blue-400 hover:text-black transition" onClick={handleUnfollow}>
                       Dejar de seguir
@@ -130,6 +167,10 @@ function Profile({ user, tweets, onLogout, navigate, currentUser }) {
                       Seguir
                     </button>
                   )
+                ) : (
+                  <button className="ml-4 px-4 py-1 rounded-full bg-green-600 text-white hover:bg-green-700 transition" onClick={() => setShowEditProfile(true)}>
+                    Editar perfil
+                  </button>
                 )}
               </div>
             )}
@@ -163,6 +204,23 @@ function Profile({ user, tweets, onLogout, navigate, currentUser }) {
           )}
         </main>
       </div>
+      
+      {/* Modal de edición de perfil */}
+      {showEditProfile && (
+        <EditProfile
+          userId={currentUser.user_id}
+          onClose={() => setShowEditProfile(false)}
+          onProfileUpdated={(updatedProfile) => {
+            setProfileData(updatedProfile);
+            // Actualizar los datos del perfil completo
+            setFullProfile({
+              full_name: updatedProfile.full_name,
+              bio: updatedProfile.bio,
+              avatar_url: updatedProfile.avatar_url
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

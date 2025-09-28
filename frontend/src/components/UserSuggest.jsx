@@ -60,12 +60,12 @@ function UserSuggest({ value, onChange }) {
               onMouseDown={() => handleSelect(user)}
             >
               <img
-                src={user.avatar || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
+                src={user.avatar_url ? `http://localhost:3005${user.avatar_url}` : "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
                 alt="avatar"
-                className="w-8 h-8 rounded-full border border-gray-300"
+                className="w-8 h-8 rounded-full border border-gray-300 object-cover"
               />
               <div>
-                <div className="font-bold text-gray-800">{user.username}</div>
+                <div className="font-bold text-gray-800">{user.full_name || user.username}</div>
                 <div className="text-gray-500 text-sm">@{user.username}</div>
               </div>
             </div>

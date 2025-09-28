@@ -62,6 +62,20 @@ app.use('/users', createProxyMiddleware({
   }
 }));
 
+// Proxy para uploads (imágenes de perfil)
+app.use('/uploads', createProxyMiddleware({
+  target: 'http://localhost:3005',
+  changeOrigin: true,
+  pathRewrite: { '^/uploads': '/uploads' },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> user-service (uploads)`);
+  },
+  onError: (err, req, res) => {
+    console.error('[API-GATEWAY] Proxy error:', err);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
+  }
+}));
+
 
 // Aquí puedes agregar más microservicios (auth, feed, etc)
 
