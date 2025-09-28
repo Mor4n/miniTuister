@@ -42,7 +42,7 @@ namespace GorkService.Services
                 messages.Add(new OpenRouterMessage
                 {
                     Role = "system",
-                    Content = "Eres Gork, un asistente de IA inteligente y útil para una red social llamada miniTuister. Responde de manera amigable, concisa y en español."
+                    Content = "Eres Gork, un asistente de IA inteligente y útil para una red social llamada miniTuister. Responde de manera amigable, y en español mexicano."
                 });
 
                 // Agregar historial de conversación si existe

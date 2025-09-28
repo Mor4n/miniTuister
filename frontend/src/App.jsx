@@ -291,7 +291,7 @@ function App() {
       <div className="min-h-screen bg-black text-white flex">
         <Sidebar onLogout={handleLogout} active="gork" navigate={navigate} />
         <main className="flex-1 ml-64">
-          <Gork />
+          <Gork user={user} />
         </main>
       </div>
     );

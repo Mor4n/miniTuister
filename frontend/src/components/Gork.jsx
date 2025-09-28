@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-function Gork() {
+function Gork({ user }) {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -11,8 +11,39 @@ function Gork() {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [fullProfile, setFullProfile] = useState({
+    avatar_url: null
+  });
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Función para cargar el perfil completo del usuario
+  const fetchFullProfile = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/users/${userId}/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFullProfile({
+          avatar_url: data.avatar_url
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  // Función para obtener el avatar del usuario
+  const getUserAvatar = () => {
+    if (fullProfile?.avatar_url) {
+      return `http://localhost:3005${fullProfile.avatar_url}`;
+    }
+    return "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"; // Avatar por defecto estándar
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -21,6 +52,12 @@ function Gork() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (user?.user_id) {
+      fetchFullProfile(user.user_id);
+    }
+  }, [user]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -105,8 +142,8 @@ function Gork() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-black/95 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-lg font-bold">🚀</span>
+          <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white">
+            <img src="/gork-icono.png" alt="Gork" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Gork</h1>
@@ -130,12 +167,12 @@ function Gork() {
               {/* Avatar */}
               <div className={`flex-shrink-0 ${message.type === 'user' ? 'ml-2' : 'mr-2'}`}>
                 {message.type === 'bot' ? (
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">🤖</span>
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-white">
+                    <img src="/gork-icono.png" alt="Gork" className="w-full h-full object-cover" />
                   </div>
                 ) : (
-                  <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm">👤</span>
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gray-600">
+                    <img src={getUserAvatar()} alt={user?.username || 'Usuario'} className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
@@ -163,8 +200,8 @@ function Gork() {
         {isLoading && (
           <div className="flex justify-start">
             <div className="flex space-x-2 mr-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm">🤖</span>
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-white">
+                <img src="/gork-icono.png" alt="Gork" className="w-full h-full object-cover" />
               </div>
             </div>
             <div className="bg-gray-800 rounded-2xl rounded-bl-md px-4 py-2">
