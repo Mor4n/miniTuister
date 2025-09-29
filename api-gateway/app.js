@@ -78,7 +78,18 @@ app.use('/uploads', createProxyMiddleware({
 
 
 // Aquí puedes agregar más microservicios (auth, feed, etc)
-
+app.use('/notifications', createProxyMiddleware({
+  target: 'http://localhost:3008', // puerto del notification-service
+  changeOrigin: true,
+  pathRewrite: { '^/notifications': '/notifications' },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[API-GATEWAY] Proxying ${req.method} ${req.originalUrl} -> notification-service`);
+  },
+  onError: (err, req, res) => {
+    console.error('[API-GATEWAY] Proxy error:', err);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
+  }
+}));
 // Proxy para feed-service
 app.use('/feed', createProxyMiddleware({
   target: 'http://localhost:3006', // Puerto del feed-service

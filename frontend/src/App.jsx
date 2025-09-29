@@ -296,7 +296,19 @@ function App() {
       </div>
     );
   }
-
+  if (route === "/notifications") {
+    return (
+      <div className="min-h-screen bg-black text-white flex">
+        <Sidebar onLogout={handleLogout} active="notifications" navigate={navigate} />
+        <main className="flex-1 ml-64 max-w-2xl border-x border-gray-800 min-h-screen">
+          <div className="sticky top-0 bg-black border-b border-gray-800 p-4">
+          <h2 className="text-xl font-bold">Notificaciones</h2>
+        </div>
+        <Notifications user_id={user?.user_id} />
+      </main>
+    </div>
+  );
+}
   // Página de resultados de búsqueda de tweets
   if (route.startsWith('/search/tweets')) {
     const params = new URLSearchParams(window.location.search);

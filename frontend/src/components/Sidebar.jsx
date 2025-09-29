@@ -10,7 +10,13 @@ function Sidebar({ onLogout, active, navigate }) {
         <div className={`flex items-center space-x-3 p-3 rounded-full cursor-pointer transition-colors ${active === 'home' ? 'bg-gray-900 text-blue-400' : 'hover:bg-gray-900'}`} onClick={() => navigate('/') }>
           <span className="text-xl font-medium">Inicio</span>
         </div>
-        
+        <div
+            className={`flex items-center space-x-3 p-3 rounded-full hover:bg-gray-900 cursor-pointer transition-colors ${
+             active === "notifications" ? "text-blue-400" : ""
+          }`}
+        onClick={() => navigate("/notifications")}>
+          <span className="text-xl font-medium">Notificaciones</span>
+        </div>
         <div className={`flex items-center space-x-3 p-3 rounded-full cursor-pointer transition-colors ${active === 'gork' ? 'bg-gray-900 text-blue-400' : 'hover:bg-gray-900'}`} onClick={() => navigate('/gork')}>
           <span className="text-xl font-medium">Gork</span>
         </div>
