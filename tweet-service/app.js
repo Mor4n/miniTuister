@@ -2,6 +2,7 @@
 const express = require('express');
 const supabase = require('./index');
 const app = express();
+const { sendNotification } = require("./utils/notificationClient");
 app.use(express.json());
 
 // Manejo global de errores
@@ -40,6 +41,11 @@ app.post('/tweets/:tweet_id/reply', async (req, res) => {
     .insert([{ user_id, username, content, reply_to: tweet_id }])
     .select();
   if (error) return res.status(500).json({ error: error.message });
+  try {
+    await sendNotification(user_id, "reply", `Has respondido al tweet #${tweet_id}`);
+  } catch (err) {
+    console.error("Error al enviar notificación:", err.message);
+  }
   res.status(201).json(data[0]);
 });
 
@@ -126,17 +132,12 @@ app.post('/tweets', async (req, res) => {
   if (content.length > 280) {
     return res.status(400).json({ error: 'El contenido debe ser menor a 280 caracteres' });
   }
-  try {
-    const { data, error } = await supabase
-      .from('tweets')
-      .insert([{ user_id, content }])
-      .select();
-    if (error) throw error;
-    res.status(201).json(data[0]);
-  } catch (error) {
-    console.error('Error creating tweet:', error);
-    res.status(500).json({ error: error.message || 'Error creating tweet' });
-  }
+  const { data, error } = await supabase
+    .from('tweets')
+    .insert([{ user_id, content }])
+    .select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data[0]);
 });
 
 app.put('/tweets/:tweet_id', async (req, res) => {
@@ -166,6 +167,11 @@ app.post('/tweets/:tweet_id/retweet', async (req, res) => {
     .insert([{ user_id, content: '', retweet_to: tweet_id }])
     .select();
   if (error) return res.status(500).json({ error: error.message });
+  try {
+  await sendNotification(user_id, "retweet", `Has hecho retweet al tweet #${tweet_id}`);
+} catch (err) {
+  console.error("Error al enviar notificación:", err.message);
+}
   res.status(201).json(data[0]);
 });
 
@@ -184,6 +190,7 @@ app.post('/tweets/:tweet_id/like', async (req, res) => {
     .insert([{ user_id, tweet_id }])
     .select();
   if (error) return res.status(500).json({ error: error.message });
+   sendNotification(user_id, "like", `Has dado like al tweet #${tweet_id}`);
   res.status(201).json(data[0]);
 });
 
