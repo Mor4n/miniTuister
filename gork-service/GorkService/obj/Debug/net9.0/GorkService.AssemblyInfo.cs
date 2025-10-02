@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GorkService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+61f01fc689324915ff8740f772f5567e7c297957")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1371c1b3f0749ddb9c183a6313bee125094e7dce")]
 [assembly: System.Reflection.AssemblyProductAttribute("GorkService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GorkService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

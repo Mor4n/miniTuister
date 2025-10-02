@@ -1,6 +1,8 @@
 
 import React, { useEffect, useState } from "react";
 import Tweet from "./Tweet";
+import { fetchTweetsOptimized } from "../utils/apiOptimized";
+import LoadingSpinner from "./LoadingSpinner";
 
 
 function TweetList({ user_id, navigate, tweets: propTweets }) {
@@ -15,34 +17,26 @@ function TweetList({ user_id, navigate, tweets: propTweets }) {
       return;
     }
     setLoading(true);
-    fetch(`http://localhost:3000/tweets?user_id=${user_id}`)
-      .then(async res => {
-        let data;
-        try {
-          data = await res.json();
-        } catch (jsonErr) {
-          setTweets([]);
-          setLoading(false);
-          console.error('Error al cargar tweets: No se pudo procesar la respuesta del servidor.');
-          return;
-        }
-        if (res.ok && Array.isArray(data)) {
+    
+    fetchTweetsOptimized(user_id)
+      .then(data => {
+        if (Array.isArray(data)) {
           setTweets(data);
         } else {
           setTweets([]);
-          console.error('Error al cargar tweets:', data.error || data);
+          console.error('Error: Los datos recibidos no son un array válido');
         }
         setLoading(false);
       })
       .catch(err => {
         setTweets([]);
         setLoading(false);
-        console.error('Error al cargar tweets: No se pudo conectar con el servidor.');
+        console.error('Error al cargar tweets optimizado:', err.message);
       });
   }, [user_id, propTweets]);
 
   if (loading) {
-    return <div className="text-gray-400">Cargando tweets...</div>;
+    return <LoadingSpinner text="Cargando tweets..." />;
   }
 
   return (

@@ -1,65 +1,58 @@
 
 import React, { useState } from "react";
+import { checkUserLikeOptimized, invalidateLikeCache, invalidateTweetsCache } from "../utils/apiOptimized";
+import OptimizedImage from "./OptimizedImage";
 
 function Tweet({ tweet, user_id, navigate }) {
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [replies, setReplies] = useState([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
-  const [authorProfile, setAuthorProfile] = useState({
+  // Usar los datos que ya vienen del servidor
+  const authorProfile = tweet.author_profile || {
     full_name: null,
     bio: null,
     avatar_url: null
-  });
-
-  // Función para cargar el perfil del autor del tweet
-  const fetchAuthorProfile = async () => {
-    try {
-      let authorId = tweet.user_id;
-      if (typeof authorId === 'object' && authorId !== null) {
-        authorId = authorId.user_id || authorId.id || '';
-      }
-      
-      if (authorId && typeof authorId === 'string' && authorId.length > 0) {
-        const response = await fetch(`http://localhost:3000/users/${authorId}/profile`);
-        if (response.ok) {
-          const data = await response.json();
-          setAuthorProfile({
-            full_name: data.full_name,
-            bio: data.bio,
-            avatar_url: data.avatar_url
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error al cargar perfil del autor:', error);
-    }
   };
 
-  // Cargar cantidad de respuestas al montar
+  // Inicializar replies con el conteo que viene del servidor
   React.useEffect(() => {
-    fetch(`http://localhost:3000/tweets/${tweet.id}/replies`)
-      .then(res => res.json())
-      .then(data => setReplies(data));
+    if (tweet.replies_count !== undefined) {
+      // Crear un array simulado con el conteo para mostrar el número correcto
+      setReplies(Array(tweet.replies_count || 0).fill({}));
+    }
     // eslint-disable-next-line
-  }, [tweet.id]);
+  }, [tweet.replies_count]);
   const [deleted, setDeleted] = useState(false);
-  const [likes, setLikes] = useState(0);
+  const [likes, setLikes] = useState(tweet.likes_count || 0);
   const [liking, setLiking] = useState(false);
   const [liked, setLiked] = useState(false);
-  // Obtener likes y si el usuario ya dio like
-  const fetchLikes = async () => {
-    const res = await fetch(`http://localhost:3000/tweets/${tweet.id}/likes`);
-    const data = await res.json();
-    setLikes(data.likes || 0);
-    // Consultar si el usuario ya dio like
+  
+  // Solo verificar si el usuario ya dio like (usando caché)
+  const checkIfLiked = async () => {
     const safeUserId = typeof user_id === 'string' ? user_id : (user_id && user_id.user_id ? user_id.user_id : '');
     if (safeUserId) {
-      const res2 = await fetch(`http://localhost:3000/tweets/${tweet.id}/likes?user_id=${safeUserId}`);
-      const data2 = await res2.json();
-      setLiked(data2.liked || false);
+      try {
+        const liked = await checkUserLikeOptimized(tweet.id, safeUserId);
+        setLiked(liked);
+      } catch (error) {
+        console.error('Error al verificar like:', error);
+        setLiked(false);
+      }
     } else {
       setLiked(false);
+    }
+  };
+  
+  // Función optimizada para actualizar likes después de una acción
+  const fetchLikes = async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/tweets/${tweet.id}/likes`);
+      const data = await res.json();
+      setLikes(data.likes || 0);
+      setLiked(data.liked || false);
+    } catch (error) {
+      console.error('Error al obtener likes:', error);
     }
   };
 
@@ -68,26 +61,56 @@ function Tweet({ tweet, user_id, navigate }) {
   const handleLike = async () => {
     if (liked) return;
     setLiking(true);
-    await fetch(`http://localhost:3000/tweets/${tweet.id}/like`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id })
-    });
+    
+    try {
+      await fetch(`http://localhost:3000/tweets/${tweet.id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id })
+      });
+      
+      // Actualizar estado local inmediatamente
+      setLiked(true);
+      setLikes(prev => prev + 1);
+      
+      // Invalidar caché para que se actualice en la próxima carga
+      const safeUserId = typeof user_id === 'string' ? user_id : (user_id && user_id.user_id ? user_id.user_id : '');
+      invalidateLikeCache(tweet.id, safeUserId);
+      invalidateTweetsCache(); // Invalidar también el caché de tweets
+      
+    } catch (error) {
+      console.error('Error al dar like:', error);
+    }
+    
     setLiking(false);
-    fetchLikes();
   };
 
   // Quitar like
   const handleUnlike = async () => {
     if (!liked) return;
     setLiking(true);
-    await fetch(`http://localhost:3000/tweets/${tweet.id}/like`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id })
-    });
+    
+    try {
+      await fetch(`http://localhost:3000/tweets/${tweet.id}/like`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id })
+      });
+      
+      // Actualizar estado local inmediatamente
+      setLiked(false);
+      setLikes(prev => Math.max(0, prev - 1));
+      
+      // Invalidar caché para que se actualice en la próxima carga
+      const safeUserId = typeof user_id === 'string' ? user_id : (user_id && user_id.user_id ? user_id.user_id : '');
+      invalidateLikeCache(tweet.id, safeUserId);
+      invalidateTweetsCache(); // Invalidar también el caché de tweets
+      
+    } catch (error) {
+      console.error('Error al quitar like:', error);
+    }
+    
     setLiking(false);
-    fetchLikes();
   };
 
   // Obtener user_id y username del tweet
@@ -102,12 +125,17 @@ function Tweet({ tweet, user_id, navigate }) {
     navigate(`/tweet/${tweet.id}`);
   };
 
-  // Obtener respuestas
+  // Obtener respuestas completas (solo cuando se abran)
   const fetchReplies = async () => {
     setLoadingReplies(true);
-  const res = await fetch(`http://localhost:3000/tweets/${tweet.id}/replies`);
-    const data = await res.json();
-    setReplies(data);
+    try {
+      const res = await fetch(`http://localhost:3000/tweets/${tweet.id}/replies`);
+      const data = await res.json();
+      setReplies(data);
+    } catch (error) {
+      console.error('Error al cargar respuestas:', error);
+      setReplies([]);
+    }
     setLoadingReplies(false);
   };
 
@@ -115,30 +143,51 @@ function Tweet({ tweet, user_id, navigate }) {
   const handleReply = async (e) => {
     e.preventDefault();
     if (!replyText.trim()) return;
-    // Obtener username del localStorage/JWT si existe
-    let username = null;
+    
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const jwt_decode_mod = await import('jwt-decode');
-        const decode = jwt_decode_mod.default ? jwt_decode_mod.default : jwt_decode_mod;
-        const decoded = decode(token);
-        username = decoded.username || decoded.user || decoded.name;
-      }
-    } catch {}
-    await fetch(`http://localhost:3000/tweets/${tweet.id}/reply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id, username, content: replyText })
-    });
-    setReplyText("");
-    fetchReplies();
+      // Obtener username del localStorage/JWT si existe
+      let username = null;
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const jwt_decode_mod = await import('jwt-decode');
+          const decode = jwt_decode_mod.default ? jwt_decode_mod.default : jwt_decode_mod;
+          const decoded = decode(token);
+          username = decoded.username || decoded.user || decoded.name;
+        }
+      } catch {}
+      
+      await fetch(`http://localhost:3000/tweets/${tweet.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id, username, content: replyText })
+      });
+      
+      setReplyText("");
+      
+      // Invalidar caché de tweets para que se actualice el conteo
+      invalidateTweetsCache();
+      
+      // Recargar respuestas
+      fetchReplies();
+      
+    } catch (error) {
+      console.error('Error al enviar respuesta:', error);
+    }
   };
 
   // Borrar tweet
   const handleDelete = async () => {
-  await fetch(`http://localhost:3000/tweets/${tweet.id}`, { method: 'DELETE' });
-    setDeleted(true);
+    try {
+      await fetch(`http://localhost:3000/tweets/${tweet.id}`, { method: 'DELETE' });
+      setDeleted(true);
+      
+      // Invalidar caché de tweets para que se actualice la lista
+      invalidateTweetsCache();
+      
+    } catch (error) {
+      console.error('Error al borrar tweet:', error);
+    }
   };
 
   // Mostrar respuestas al abrir
@@ -147,10 +196,9 @@ function Tweet({ tweet, user_id, navigate }) {
     if (!showReply) fetchReplies();
   };
 
-  // Cargar likes y perfil del autor al montar
+  // Solo verificar si el usuario ya dio like al montar
   React.useEffect(() => {
-    fetchLikes();
-    fetchAuthorProfile();
+    checkIfLiked();
     // eslint-disable-next-line
   }, []);
 
@@ -161,8 +209,8 @@ function Tweet({ tweet, user_id, navigate }) {
       className="flex gap-3 bg-white p-4 rounded-xl shadow border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
       onClick={handleTweetClick}
     >
-      <img
-        src={authorProfile.avatar_url ? `http://localhost:3005${authorProfile.avatar_url}` : "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"}
+      <OptimizedImage
+        src={authorProfile.avatar_url ? `http://localhost:3005${authorProfile.avatar_url}` : null}
         alt="avatar"
         className="w-12 h-12 rounded-full object-cover border border-gray-300 cursor-pointer"
         data-no-navigate
@@ -244,9 +292,9 @@ function Tweet({ tweet, user_id, navigate }) {
             <span className="text-sm">Responder</span>
             <span className={
               `ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ` +
-              (replies.length > 0 ? 'bg-blue-100 text-blue-600 border border-blue-200' : 'bg-gray-200 text-gray-400 border border-gray-300')
+              ((tweet.replies_count || 0) > 0 ? 'bg-blue-100 text-blue-600 border border-blue-200' : 'bg-gray-200 text-gray-400 border border-gray-300')
             }>
-              {replies.length}
+              {tweet.replies_count || 0}
             </span>
           </button>
           {liked ? (
@@ -296,10 +344,14 @@ function Tweet({ tweet, user_id, navigate }) {
               <div className="text-xs text-gray-400">Cargando respuestas...</div>
             ) : (
               <div className="space-y-2">
-                {replies.length === 0 && <div className="text-xs text-gray-400">Sin respuestas</div>}
-                {replies.map((r) => (
-                  <div key={r.id} className="flex gap-2 items-start">
-                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="avatar" className="w-7 h-7 rounded-full border border-gray-300" />
+                {(!replies || replies.length === 0) && <div className="text-xs text-gray-400">Sin respuestas</div>}
+                {replies && replies.map((r, index) => (
+                  <div key={r.id || `reply-${index}`} className="flex gap-2 items-start">
+                    <OptimizedImage 
+                      src={null} 
+                      alt="avatar" 
+                      className="w-7 h-7 rounded-full border border-gray-300" 
+                    />
                     <div>
                       <div className="text-xs text-gray-800 font-bold">{r.username || "Usuario"}</div>
                       <div className="text-xs text-gray-600">{r.content}</div>

@@ -89,15 +89,37 @@ app.get('/tweets/:tweet_id', async (req, res) => {
   
   const { data, error } = await supabase
     .from('tweets')
-    .select('id, content, created_at, reply_to, user_id, profiles:profiles!user_id(username)')
+    .select(`
+      id, content, created_at, reply_to, user_id,
+      profiles:profiles!user_id(username, full_name, bio, avatar_url)
+    `)
     .eq('id', tweet_id)
     .single();
     
   if (error) return res.status(404).json({ error: 'Tweet no encontrado' });
   
+  // Obtener likes del tweet
+  const { count: likesCount } = await supabase
+    .from('tweet_likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('tweet_id', tweet_id);
+    
+  // Obtener conteo de respuestas
+  const { count: repliesCount } = await supabase
+    .from('tweets')
+    .select('*', { count: 'exact', head: true })
+    .eq('reply_to', tweet_id);
+  
   const tweet = {
     ...data,
-    username: data.profiles?.username || 'usuario'
+    username: data.profiles?.username || 'usuario',
+    author_profile: {
+      full_name: data.profiles?.full_name,
+      bio: data.profiles?.bio,
+      avatar_url: data.profiles?.avatar_url
+    },
+    likes_count: likesCount || 0,
+    replies_count: repliesCount || 0
   };
   
   res.json(tweet);
@@ -106,13 +128,52 @@ app.get('/tweets/:tweet_id', async (req, res) => {
 app.get('/tweets', async (req, res) => {
   const { data, error } = await supabase
     .from('tweets')
-    .select('id, content, created_at, reply_to, user_id, profiles:profiles!user_id(username)')
+    .select(`
+      id, content, created_at, reply_to, user_id,
+      profiles:profiles!user_id(username, full_name, bio, avatar_url)
+    `)
     .order('created_at', { ascending: false });
+    
   if (error) return res.status(500).json({ error: error.message });
+  
+  // Obtener likes para todos los tweets de una vez
+  const tweetIds = data.map(tweet => tweet.id);
+  const { data: likesData } = await supabase
+    .from('tweet_likes')
+    .select('tweet_id')
+    .in('tweet_id', tweetIds);
+    
+  // Contar likes por tweet
+  const likeCounts = {};
+  likesData?.forEach(like => {
+    likeCounts[like.tweet_id] = (likeCounts[like.tweet_id] || 0) + 1;
+  });
+  
+  // Obtener conteo de respuestas para todos los tweets
+  const { data: repliesData } = await supabase
+    .from('tweets')
+    .select('reply_to')
+    .in('reply_to', tweetIds)
+    .not('reply_to', 'is', null);
+    
+  // Contar respuestas por tweet
+  const replyCounts = {};
+  repliesData?.forEach(reply => {
+    replyCounts[reply.reply_to] = (replyCounts[reply.reply_to] || 0) + 1;
+  });
+  
   const tweets = data.map(tweet => ({
     ...tweet,
-    username: tweet.profiles?.username || 'usuario'
+    username: tweet.profiles?.username || 'usuario',
+    author_profile: {
+      full_name: tweet.profiles?.full_name,
+      bio: tweet.profiles?.bio,
+      avatar_url: tweet.profiles?.avatar_url
+    },
+    likes_count: likeCounts[tweet.id] || 0,
+    replies_count: replyCounts[tweet.id] || 0
   }));
+  
   res.json(tweets);
 });
 
